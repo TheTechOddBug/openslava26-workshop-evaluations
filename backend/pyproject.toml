@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "workshop-evals"
+version = "0.1.0"
+description = "Backend for the GenAI evaluations workshop: run a matrix of prompts, models and evaluation mechanisms."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "httpx>=0.27",
+    "anthropic>=0.39",
+    "pyyaml>=6.0",
+    "sse-starlette>=2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+workshop-evals = "workshop_evals.adapters.inbound.http.app:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/workshop_evals"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "real_llm: exercises a live local model (Ollama); skipped unless explicitly selected",
+]
+# Keep the default run offline and deterministic: the real_llm suite is opt-in via
+# `pytest -m real_llm`. A CLI `-m` overrides this default selection.
+addopts = "-q -m 'not real_llm'"
+
+[tool.coverage.run]
+source = ["workshop_evals"]
+branch = true
+omit = ["*/adapters/inbound/http/app.py"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]

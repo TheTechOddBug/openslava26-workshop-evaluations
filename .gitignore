@@ -1,0 +1,55 @@
+# Working / process docs — never shipped
+_worktree-notes/
+.scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+coverage.xml
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Runtime catalogues written from the UI (the shipped bases are data/models.yaml + data/datasets/)
+models.runtime.yaml
+models-local.yaml
+datasets.runtime.json
+
+# Test artifacts
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+.nyc_output/
+.e2e-overlay.yaml
+.e2e-datasets.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

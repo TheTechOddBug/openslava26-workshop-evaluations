@@ -1,0 +1,84 @@
+# Example model catalogue — copy and edit this file to match your setup.
+# Local models (Ollama) require Ollama running on its default port (localhost:11434). No API key needed.
+# Cloud models (OpenAI, Anthropic) require the API key set in the indicated environment variable.
+# role: candidate (answers prompts), judge (scores answers) or both.
+# Note: reasoning models (supports_reasoning: true, e.g. Qwen3) make unreliable judges —
+# they tend to spend their whole token budget "thinking" and never emit the rubric JSON.
+# Prefer a non-reasoning model (e.g. Llama 3.2 3B) as the judge; the UI defaults to one.
+
+models:
+
+  # --- Local (Ollama) ---------------------------------------------------------
+  - id: qwen3-4b
+    display_name: "Qwen3 4B (local)"
+    provider: openai_compat
+    model_id: qwen3:4b
+    base_url: http://localhost:11434/v1
+    role: both
+    supports_reasoning: true
+
+  - id: llama3-2-3b
+    display_name: "Llama 3.2 3B (local)"
+    provider: openai_compat
+    model_id: llama3.2:3b
+    base_url: http://localhost:11434/v1
+    role: both
+    supports_reasoning: false
+
+  - id: qwen25-coder-7b
+    display_name: "Qwen2.5 Coder 7B (local)"
+    provider: openai_compat
+    model_id: qwen2.5-coder:7b
+    base_url: http://localhost:11434/v1
+    role: both
+    supports_reasoning: false
+
+  # --- OpenAI -----------------------------------------------------------------
+  - id: gpt-4o-mini
+    display_name: "GPT-4o Mini"
+    provider: openai_compat
+    model_id: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    role: both
+    supports_reasoning: false
+
+  - id: gpt-4o
+    display_name: "GPT-4o"
+    provider: openai_compat
+    model_id: gpt-4o
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    role: both
+    supports_reasoning: false
+
+  # --- Anthropic --------------------------------------------------------------
+  - id: claude-haiku-4-5
+    display_name: "Claude Haiku 4.5"
+    provider: anthropic
+    model_id: claude-haiku-4-5-20251001
+    api_key_env: ANTHROPIC_API_KEY
+    role: both
+    supports_reasoning: false
+
+  - id: claude-sonnet-4-5
+    display_name: "Claude Sonnet 4.5"
+    provider: anthropic
+    model_id: claude-sonnet-4-5
+    api_key_env: ANTHROPIC_API_KEY
+    role: both
+    supports_reasoning: true
+
+  # --- Google Gemini (OpenAI-compatible endpoint) -----------------------------
+  # Gemini exposes an OpenAI-compatible API, so it uses the openai_compat type with
+  # Google's base_url and a GEMINI_API_KEY. Any provider with an OpenAI-compatible
+  # endpoint (Mistral, Groq, Together, Azure OpenAI, ...) follows the same pattern:
+  # set base_url + api_key_env. Uncomment and set the key to use it.
+  # - id: gemini-2-5-flash
+  #   display_name: "Gemini 2.5 Flash"
+  #   provider: openai_compat
+  #   model_id: gemini-2.5-flash
+  #   base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  #   api_key_env: GEMINI_API_KEY
+  #   role: both
+  #   supports_reasoning: false

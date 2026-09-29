@@ -1,0 +1,1 @@
+{"id":"d575a5335e38dd1d08a58dbb55f9e322bdc7339b","url":"http://localhost:5173/","source":"import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$RefreshSig$ = () => (type) => type;"}
