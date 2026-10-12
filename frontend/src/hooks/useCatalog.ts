@@ -22,7 +22,7 @@ export function useCatalog() {
         setError(
           err instanceof ApiError
             ? err.message
-            : "Cannot reach the backend. Start it with uvicorn on port 8000.",
+            : "Cannot reach the backend. Start it with uvicorn (port 8000, or BACKEND_PORT if set).",
         ),
       );
   }, []);

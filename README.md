@@ -104,6 +104,15 @@ npm run dev
 
 Open <http://localhost:5173>. The API docs are at <http://localhost:8000/docs>.
 
+**Different ports.** If 8000 or 5173 is already taken, pick others: start the backend with
+`--port <n>` and set the same values for the frontend, either in the shell or in
+`frontend/.env` (read by both `npm run dev` and the Playwright suite):
+
+```bash
+uvicorn workshop_evals.adapters.inbound.http.app:app --port 8001   # backend
+BACKEND_PORT=8001 FRONTEND_PORT=5174 npm run dev                     # frontend
+```
+
 ## Tests
 
 ```bash

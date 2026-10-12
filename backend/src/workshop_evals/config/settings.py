@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # Where UI-managed dataset cases persist. Gitignored overlay over the read-only JSONL base.
     datasets_overlay: Path = _BACKEND_ROOT / "data" / "datasets.runtime.json"
 
+    # Port for the `workshop-evals` launcher. With uvicorn directly, pass --port instead.
+    port: int = 8000
+
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     # Offline demo mode: answer with a canned client instead of calling real models.
