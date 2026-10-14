@@ -29,6 +29,8 @@ export function Matrix({ catalog }: { catalog: Catalog }) {
   const [judgeId, setJudgeId] = useState(defaultJudgeId(models));
 
   const [run, setRun] = useState<Run | null>(null);
+  const [ranMethods, setRanMethods] = useState<EvalMethod[]>([]);
+  const [thresholds, setThresholds] = useState<Partial<Record<EvalMethod, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const polling = useRef(false);
 
@@ -104,6 +106,7 @@ export function Matrix({ catalog }: { catalog: Catalog }) {
         judge_model_id: needsJudge ? judgeId : null,
       });
       setRun(created);
+      setRanMethods([...methods]);
       polling.current = true;
       poll(created.id);
     } catch (err) {
@@ -170,6 +173,7 @@ export function Matrix({ catalog }: { catalog: Catalog }) {
                     style={{ minHeight: 60 }}
                   />
                 </label>
+                <span className="field__hint">Write <code>{"{prompt}"}</code> where the case's own prompt should go.</span>
               </div>
             ))}
             <button className="btn" onClick={addCandidate}>
@@ -214,6 +218,23 @@ export function Matrix({ catalog }: { catalog: Catalog }) {
                 />
               </div>
             )}
+            <div className="gate-thresholds">
+              <span className="field__label">Gate: block the release when a column's average is below</span>
+              {ranMethods.map((m) => (
+                <label key={m} className="gate-threshold">
+                  <span>{m} ≥</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={thresholds[m] ?? String(defaultThreshold(m))}
+                    onChange={(e) => setThresholds((prev) => ({ ...prev, [m]: e.target.value }))}
+                    aria-label={`${m} threshold`}
+                  />
+                </label>
+              ))}
+            </div>
             <div className="matrix" style={{ marginTop: 12 }}>
               <table>
                 <thead>
@@ -236,6 +257,29 @@ export function Matrix({ catalog }: { catalog: Catalog }) {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td className="case">Tokens</td>
+                    {columns.map((col) => (
+                      <td key={col}>
+                        <UsageTotal cells={run.results.filter((r) => (r.label ?? r.model_id) === col && !r.error)} />
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="gate-row">
+                    <td className="case">Gate</td>
+                    {columns.map((col) => (
+                      <td key={col}>
+                        <GateCell
+                          cells={run.results.filter((r) => (r.label ?? r.model_id) === col)}
+                          methods={ranMethods}
+                          threshold={(m) => thresholdValue(thresholds[m], m)}
+                          done={run.status === "completed"}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -254,6 +298,69 @@ function CellView({ cell }: { cell: CellResult | undefined }) {
       {cell.scores.map((s) => (
         <span key={s.method} className={`chip chip--${tone(s.value)}`}>
           {s.method}: {fmt(s.value)}
+        </span>
+      ))}
+      <span className="cell-usage" title={`latency: ${cell.usage.latency_ms} ms`}>
+        {tokens(cell.usage.prompt_tokens)} in · {tokens(cell.usage.completion_tokens)} out
+      </span>
+    </div>
+  );
+}
+
+// Candidate tokens per column. Input tokens are where a longer, refined prompt shows its cost.
+function UsageTotal({ cells }: { cells: CellResult[] }) {
+  if (cells.length === 0) return <span className="muted">—</span>;
+  const input = cells.reduce((sum, c) => sum + c.usage.prompt_tokens, 0);
+  const output = cells.reduce((sum, c) => sum + c.usage.completion_tokens, 0);
+  return (
+    <span className="cell-usage cell-usage--total">
+      {tokens(input)} in · {tokens(output)} out
+    </span>
+  );
+}
+
+const tokens = (n: number) => n.toLocaleString("en-US");
+
+// The CI gate from Lab 07: a column passes when, for every mechanism, its average score
+// over the cases reaches the threshold. A cell that errored counts as 0 for each
+// mechanism; a mechanism that does not apply to a case is left out of that average.
+const defaultThreshold = (m: EvalMethod) => (m === "llm_judge" ? 0.75 : 0.9);
+
+function thresholdValue(raw: string | undefined, m: EvalMethod): number {
+  const n = raw === undefined || raw.trim() === "" ? NaN : Number(raw);
+  return Number.isFinite(n) ? n : defaultThreshold(m);
+}
+
+function GateCell({
+  cells,
+  methods,
+  threshold,
+  done,
+}: {
+  cells: CellResult[];
+  methods: EvalMethod[];
+  threshold: (m: EvalMethod) => number;
+  done: boolean;
+}) {
+  if (!done) return <span className="muted">waiting for the run</span>;
+  const checks = methods.flatMap((m) => {
+    const values = cells.flatMap((c) => {
+      if (c.error) return [0];
+      const score = c.scores.find((s) => s.method === m);
+      return score ? [score.value] : [];
+    });
+    if (values.length === 0) return [];
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    return [{ method: m, mean, min: threshold(m), ok: mean >= threshold(m) }];
+  });
+  if (checks.length === 0) return <span className="muted">n/a</span>;
+  const pass = checks.every((c) => c.ok);
+  return (
+    <div className="cell-scores">
+      <span className={`gate-verdict gate-verdict--${pass ? "pass" : "blocked"}`}>{pass ? "PASS" : "BLOCKED"}</span>
+      {checks.map((c) => (
+        <span key={c.method} className="cell-usage" title={`needs ≥ ${fmt(c.min)}`}>
+          {c.ok ? "✓" : "✗"} {c.method} {fmt(c.mean)} {c.ok ? "≥" : "<"} {fmt(c.min)}
         </span>
       ))}
     </div>

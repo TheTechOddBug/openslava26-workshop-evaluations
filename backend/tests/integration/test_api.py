@@ -167,6 +167,34 @@ def test_run_matrix(client):
     assert len(fetched["results"]) == 4
 
 
+def test_run_matrix_fills_prompt_placeholder_per_case():
+    # Lab 02: one refined template, many cases. Each case's own prompt must reach the model.
+    sent = []
+
+    def record(model, messages, params) -> str:
+        sent.append(messages[-1]["content"])
+        return "negative"
+
+    local = TestClient(create_app(build_container(llm_client=FakeLLMClient(handler=record))))
+    body = {
+        "case_ids": ["sent-01", "sent-02"],
+        "candidates": [
+            {"model_id": "llama3-2-3b", "prompt_override": "Answer in one word.\n\n{prompt}"}
+        ],
+        "methods": ["exact_match"],
+    }
+    run_id = local.post("/api/runs", json=body).json()["id"]
+    assert local.get(f"/api/runs/{run_id}").json()["status"] == "completed"
+
+    cases = {
+        c["id"]: c["prompt"]
+        for c in local.get("/api/catalog/datasets/sentiment_classification/cases").json()
+    }
+    assert sorted(sent) == sorted(
+        f"Answer in one word.\n\n{cases[cid]}" for cid in ("sent-01", "sent-02")
+    )
+
+
 def test_run_matrix_skips_unknown_case(client):
     body = {
         "case_ids": ["sent-01", "ghost-case"],

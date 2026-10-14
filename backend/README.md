@@ -51,7 +51,9 @@ pip install -e ".[dev]"
 uvicorn workshop_evals.adapters.inbound.http.app:app --reload
 ```
 
-The interactive API docs are then served at `http://localhost:8000/docs`.
+The interactive API docs are then served at `http://localhost:8000/docs`. Add `--port <n>` to
+use another port (or set `WORKSHOP_EVALS_PORT` for the `workshop-evals` launcher), and point the
+frontend at it with `BACKEND_PORT=<n>`.
 
 ## Test
 

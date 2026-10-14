@@ -64,6 +64,11 @@ def run_sql(
     if err is not None:
         return None, f"invalid reference: {err}"
 
+    # An empty query runs fine in SQLite and returns no rows, which would read as a
+    # query that found nothing. Usually the model ran out of tokens before answering.
+    if not candidate_sql.strip():
+        return 0.0, "no SQL query found in the response"
+
     cand_rows, err = _execute(schema, candidate_sql)
     if err is not None:
         return 0.0, f"candidate query failed: {err}"

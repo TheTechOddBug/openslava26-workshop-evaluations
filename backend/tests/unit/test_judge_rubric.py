@@ -119,6 +119,33 @@ class TestParseJudgeResponse:
         score, justification, dims = parse_judge_response("", "code_generation")
         assert score == 0.0
 
+    def test_reads_verdict_missing_its_closing_brace(self):
+        # Llama 3.2 3B on summ-101: a complete verdict that stops before the final "}"
+        text = json.dumps(VALID_VERDICT, indent=2).rstrip("}").rstrip()
+        score, justification, dims = parse_judge_response(text, "summarization")
+        assert score > 0.0
+        assert dims["correctness"] == pytest.approx(8.0)
+        assert justification == VALID_VERDICT["justification"]
+
+    def test_reads_verdict_cut_off_inside_the_justification(self):
+        text = json.dumps(VALID_VERDICT)[: -len(' edge case."}')]
+        score, justification, dims = parse_judge_response(text, "summarization")
+        assert len(dims) == len(DIMENSIONS)
+        assert justification.startswith("The response is mostly correct")
+
+    def test_keeps_a_long_justification_whole(self):
+        long_text = "The response is mostly correct, but it could be more concise. " * 6
+        verdict = {**VALID_VERDICT, "justification": long_text}
+        _, justification, _ = parse_judge_response(json.dumps(verdict), "writing")
+        assert len(long_text) > 200
+        assert justification == long_text
+
+    def test_ignores_text_after_a_complete_verdict(self):
+        text = json.dumps(VALID_VERDICT) + "\nHope this helps!"
+        score, _, dims = parse_judge_response(text, "code_generation")
+        assert score > 0.0
+        assert dims["clarity"] == pytest.approx(9.0)
+
 
 # ---------------------------------------------------------------------------
 # build_judge_messages

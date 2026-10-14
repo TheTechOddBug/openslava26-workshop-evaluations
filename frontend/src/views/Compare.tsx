@@ -98,6 +98,7 @@ export function Compare({ catalog }: { catalog: Catalog }) {
             <span className="field__label">Prompt override (optional)</span>
             <textarea value={overrideA} onChange={(e) => setOverrideA(e.target.value)} style={{ minHeight: 56 }} />
           </label>
+          <span className="field__hint">Write <code>{"{prompt}"}</code> where the case's own prompt should go.</span>
         </div>
 
         <div className="card">
@@ -107,6 +108,7 @@ export function Compare({ catalog }: { catalog: Catalog }) {
             <span className="field__label">Prompt override (optional)</span>
             <textarea value={overrideB} onChange={(e) => setOverrideB(e.target.value)} style={{ minHeight: 56 }} />
           </label>
+          <span className="field__hint">Write <code>{"{prompt}"}</code> where the case's own prompt should go.</span>
         </div>
 
         <div className="card">

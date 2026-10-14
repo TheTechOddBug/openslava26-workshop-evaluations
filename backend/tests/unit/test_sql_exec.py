@@ -93,3 +93,15 @@ class TestRunSql:
         candidate = "SELECT age FROM users WHERE id = 2"
         score, detail = run_sql(candidate, reference, SCHEMA)
         assert score == 0.0
+
+    def test_empty_candidate_reports_no_query(self):
+        # e.g. a reasoning model that spent its whole token budget thinking
+        reference = "SELECT name FROM users WHERE id = 1"
+        score, detail = run_sql(extract_sql("   "), reference, SCHEMA)
+        assert score == 0.0
+        assert detail == "no SQL query found in the response"
+
+    def test_empty_candidate_still_reports_a_broken_reference(self):
+        score, detail = run_sql("", "SELECT nonexistent_column FROM users", SCHEMA)
+        assert score is None
+        assert "invalid reference" in detail.lower()

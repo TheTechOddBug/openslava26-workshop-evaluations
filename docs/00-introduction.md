@@ -123,7 +123,10 @@ The left panel has three cards: Cases, Candidates, and Mechanisms.
 
 Click **Run matrix**. A progress bar fills as cells complete. Results appear as a table:
 rows are cases, columns are candidates, and each cell shows the method scores as chips
-coloured by verdict (green pass, red fail, amber borderline).
+coloured by verdict (green pass, red fail, amber borderline), followed by the candidate's
+token usage (input and output). A **Tokens** row at the bottom totals each column, and a
+**Gate** row marks each column **PASS** or **BLOCKED** against a threshold per mechanism
+(Lab 07 explains it).
 
 ### Judge reliability
 

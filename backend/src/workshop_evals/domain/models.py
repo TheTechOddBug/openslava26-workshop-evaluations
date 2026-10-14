@@ -173,6 +173,10 @@ class JudgeAgreement(BaseModel):
     sample_size: int
 
 
+# Marks where a prompt override takes the case's own prompt.
+PROMPT_PLACEHOLDER = "{prompt}"
+
+
 class CandidateConfig(BaseModel):
     """One column of the matrix: a model, its params, and an optional prompt override.
 
@@ -184,6 +188,19 @@ class CandidateConfig(BaseModel):
     params: RunParams = Field(default_factory=RunParams)
     prompt_override: str | None = None
     label: str | None = None
+
+    def prompt_for(self, case_prompt: str) -> str:
+        """The prompt this candidate sends for a case.
+
+        Without an override it is the case's own prompt. Each ``{prompt}`` in the
+        override is replaced by the case's prompt, so one refined template runs across
+        many cases; an override without the placeholder is sent as written. Plain
+        replacement, not ``str.format``, so braces elsewhere in the override are kept.
+        """
+        override = (self.prompt_override or "").strip()
+        if not override:
+            return case_prompt
+        return override.replace(PROMPT_PLACEHOLDER, case_prompt)
 
 
 class MatrixSpec(BaseModel):

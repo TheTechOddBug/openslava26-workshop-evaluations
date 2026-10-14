@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Evaluating Generative-AI Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,600;0,700;1,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: OpenSlava '26 template. 16:9 stage scaled to the window and sized in container units
+   (1cqi = 1% of slide width; 1pt on the 10in template = 0.139cqi). Cover slide with purple stripes,
+   content slides on warm paper with the stacked logo top right and the template footer.
+   Single light look on purpose, matching the template on any viewer theme. */
+:root {
+  --paper: #fbf8f1;
+  --cover: #f1f1ef;
+  --white: #ffffff;
+  --ink: #2a1b3d;
+  --text: #15101c;
+  --muted: #6b5b7e;
+  --line: #e6e6dc;
+  --purple: #a100ff;
+  --purple-2: #7500c0;
+  --purple-3: #460073;
+  --orchid: #b455aa;
+  --violet: #a055f5;
+  --lilac: #c2a3ff;
+  --lavender: #e6dcff;
+  --lavender-soft: #f2edfb;
+  --pass: #1d7a3a;
+  --pass-soft: #def2e3;
+  --fail: #b3261e;
+  --fail-soft: #f8e0dd;
+  --mid: #8a5300;
+  --mid-soft: #fbefd6;
+  --font-display: "Graphik", "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Graphik", "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --bar-h: 52px;
+  --notes-h: 0px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: #d9d4e2; color: var(--text); font-family: var(--font-body); overflow: hidden; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* ---------- stage ---------- */
+.viewport {
+  height: calc(100% - var(--bar-h) - var(--notes-h));
+  display: grid; place-items: center; padding-inline: 16px; padding-block: 16px;
+  transition: height 180ms ease;
+}
+.deck {
+  position: relative;
+  width: min(100%, calc((100dvh - var(--bar-h) - var(--notes-h) - 32px) * 16 / 9));
+  aspect-ratio: 16 / 9; max-width: 100%;
+  container-type: inline-size;
+}
+.slide {
+  /* template sizes: body 14pt, small 11pt, title 24pt, eyebrow 12pt, cover title 48pt */
+  --fs-body: 1.95cqi; --fs-small: 1.55cqi; --fs-h2: 3.35cqi; --fs-h1: 6.4cqi; --fs-mono: 1.4cqi; --fs-eyebrow: 1.67cqi;
+  --pad-x: 4.2cqi; --pad-top: 4.6cqi; --pad-bottom: 6.4cqi; --gap: 2.2cqi; --logo-room: 17cqi;
+  position: absolute; inset: 0; background: var(--paper); color: var(--text);
+  box-shadow: 0 1px 2px rgb(42 27 61 / 0.08), 0 10px 32px rgb(42 27 61 / 0.14);
+  padding-inline: var(--pad-x); padding-block: var(--pad-top) var(--pad-bottom);
+  display: flex; flex-direction: column; gap: var(--gap);
+  font-size: var(--fs-body); line-height: 1.42; overflow: hidden;
+}
+.slide:not(.is-active) { visibility: hidden; }
+.slide.is-active { animation: enter 200ms ease both; }
+@keyframes enter { from { opacity: 0.5; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .slide.is-active { animation: none; } .viewport { transition: none; } }
+.notes { display: none; }
+
+/* template chrome, added to every content slide by the script */
+.brand-logo { position: absolute; top: 3.4cqi; right: 3.4cqi; width: 13cqi; height: auto; pointer-events: none; }
+.foot { position: absolute; left: 3cqi; right: 3cqi; bottom: 1.6cqi; display: flex; align-items: center; gap: 1.2cqi; font-size: 0.95cqi; color: var(--text); }
+.foot__gt { width: 0.95cqi; height: auto; }
+.foot__copy { margin-left: auto; }
+.foot__num { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- type ---------- */
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.1; text-wrap: balance; color: var(--ink); }
+h1 { font-size: var(--fs-h1); font-weight: 700; letter-spacing: -0.015em; }
+h2 { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.005em; }
+h3 { font-size: calc(var(--fs-body) * 1.08); font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font-size: var(--fs-eyebrow); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--purple-2); }
+.lede { color: var(--muted); font-size: var(--fs-eyebrow); max-width: 70ch; }
+.muted { color: var(--muted); }
+.small { font-size: var(--fs-small); }
+b, strong { font-weight: 700; }
+code, .mono { font-family: var(--font-mono); font-size: 0.84em; }
+:not(pre) > code { background: var(--lavender-soft); color: var(--purple-3); padding: 0.05em 0.32em; border-radius: 0.25em; }
+pre {
+  margin: 0; font-family: var(--font-mono); font-size: var(--fs-mono); line-height: 1.5; color: var(--text);
+  background: var(--white); border: 1px solid var(--line); border-radius: 0.7cqi;
+  padding: 1.3cqi 1.7cqi; overflow-x: auto; white-space: pre;
+}
+ul.list { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 0.55em; }
+ul.list li::marker { color: var(--purple); }
+.head { display: flex; flex-direction: column; gap: 0.7cqi; padding-right: var(--logo-room); }
+
+/* ---------- layouts ---------- */
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3cqi; flex: 1; min-height: 0; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.8cqi; }
+.cols-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5cqi; }
+.stack { display: flex; flex-direction: column; gap: 1.5cqi; min-width: 0; }
+.stack > .cols { flex: none; }
+.cols > pre { align-self: start; }
+.slide--dense { --gap: 1.8cqi; }
+.slide--dense pre { font-size: 1.3cqi; padding-block: 1.1cqi; }  /* nested columns size to their content */
+.spacer { flex: 1; }
+
+/* cards: white on paper, or the template's purple rounded rectangles */
+.panel { background: var(--white); border: 1px solid var(--line); border-radius: 1.2cqi; padding: 1.8cqi 2cqi; display: flex; flex-direction: column; gap: 0.9cqi; min-width: 0; }
+.panel--accent, .panel--p1, .panel--p2, .panel--p3, .panel--p4 { border-color: transparent; color: var(--white); }
+.panel--accent, .panel--p2 { background: linear-gradient(135deg, var(--purple-2), var(--purple-3)); }
+.panel--p1 { background: var(--purple); }
+.panel--p3 { background: linear-gradient(135deg, var(--purple-3), #2a0047); }
+.panel--p4 { background: var(--orchid); }
+.panel--accent h3, .panel--p1 h3, .panel--p2 h3, .panel--p3 h3, .panel--p4 h3 { color: var(--white); }
+.panel--accent pre { background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.25); color: var(--white); }
+.panel--accent :not(pre) > code { background: rgb(255 255 255 / 0.16); color: var(--white); }
+
+/* verdict chips: the app's pass / borderline / fail language */
+.chip { display: inline-flex; align-items: center; gap: 0.4em; font-family: var(--font-mono); font-size: var(--fs-small); padding: 0.15em 0.65em; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip--pass { background: var(--pass-soft); color: var(--pass); }
+.chip--fail { background: var(--fail-soft); color: var(--fail); }
+.chip--mid { background: var(--mid-soft); color: var(--mid); }
+.chip--plain { background: var(--lavender); color: var(--purple-3); }
+.mech { display: inline-block; font-family: var(--font-mono); font-size: var(--fs-small); padding: 0.1em 0.55em; border-radius: 0.35em; background: var(--lavender); color: var(--purple-2); margin: 0.1em 0.25em 0.1em 0; }
+
+/* ---------- cover (template "Title: White") ---------- */
+.slide--cover { background: var(--cover); padding: 0; display: block; }
+.stripes { position: absolute; inset: 0 0 0 auto; width: 39%; display: grid; grid-template-columns: 18fr 7fr 4fr 4fr 3fr 2fr; }
+.stripes span:nth-child(1) { background: var(--lavender); }
+.stripes span:nth-child(2) { background: var(--lilac); }
+.stripes span:nth-child(3) { background: var(--purple); }
+.stripes span:nth-child(4) { background: var(--purple-2); }
+.stripes span:nth-child(5) { background: var(--purple-3); }
+.stripes span:nth-child(6) { background: #000000; }
+.cover__gt { position: absolute; left: 8cqi; top: 5.6cqi; width: 5cqi; height: auto; }
+.cover__wordmark { position: absolute; left: 8cqi; top: 13.5cqi; width: 26cqi; height: auto; }
+.cover__text { position: absolute; left: 8cqi; right: 6cqi; top: 20.5cqi; display: flex; flex-direction: column; gap: 1.6cqi; }
+.cover__text h1 { font-size: 5.4cqi; line-height: 1.05; }
+.cover__sub { font-family: var(--font-display); font-size: 2.5cqi; font-weight: 700; font-style: italic; color: var(--ink); max-width: 30em; }
+.cover__by { margin-top: 2.2cqi; display: flex; flex-direction: column; gap: 0.3cqi; font-size: 2.2cqi; color: var(--text); }
+.cover__by span { font-size: 1.95cqi; }
+.cover__by .cover__kudos { margin-top: 0.9cqi; font-size: 1.55cqi; color: var(--muted); max-width: 50cqi; }
+.cover__kudos b { color: var(--purple-2); }
+
+/* closing slide (template "Any questions?") */
+.slide--end { justify-content: flex-end; padding-left: 8cqi; padding-bottom: 8cqi; }
+.slide--end h1 { font-size: var(--fs-h1); }
+.end__sub { font-family: var(--font-display); font-size: 2.75cqi; font-weight: 700; font-style: italic; color: var(--ink); }
+.end__links { display: flex; flex-wrap: wrap; gap: 1cqi 4cqi; font-size: var(--fs-small); color: var(--muted); margin-top: 1.6cqi; }
+.end__links code { font-size: 1em; }
+
+/* axes */
+.axis { display: flex; flex-direction: column; gap: 0.9cqi; padding: 2cqi; border-radius: 1.2cqi; background: var(--white); border: 1px solid var(--line); }
+.axis__name { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--fs-body) * 1.45); color: var(--purple-2); }
+.axis__x { font-size: var(--fs-small); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.times { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--fs-body) * 2); color: var(--purple); align-self: center; text-align: center; }
+.axes-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 1.3cqi; align-items: stretch; }
+.cell-def { display: flex; flex-wrap: wrap; align-items: center; gap: 1cqi; padding: 1.6cqi 2cqi; border-radius: 1.2cqi; background: linear-gradient(135deg, var(--purple-2), var(--purple-3)); color: var(--white); }
+.cell-def .chip--plain { background: rgb(255 255 255 / 0.16); color: var(--white); }
+
+/* tiers */
+.tiers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.2cqi; }
+.tier { display: flex; flex-direction: column; gap: 0.9cqi; padding: 1.8cqi; border-radius: 1.2cqi; background: var(--white); border: 1px solid var(--line); min-width: 0; }
+.tier:nth-child(1) h3 { color: var(--purple-2); }
+.tier:nth-child(2) h3 { color: var(--purple); }
+.tier:nth-child(3) h3 { color: var(--orchid); }
+.tier:nth-child(4) h3 { color: var(--purple-3); }
+.tier__n { font-size: var(--fs-small); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.gradient-axis { display: grid; grid-template-columns: auto 1fr auto; gap: 1.4cqi; align-items: center; font-size: var(--fs-small); color: var(--muted); }
+.gradient-axis span.line { height: 0.45cqi; border-radius: 1cqi; background: linear-gradient(90deg, var(--lavender), var(--purple), var(--purple-3)); }
+
+/* architecture */
+.arch { display: grid; grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 1.6fr); gap: 1.6cqi; align-items: center; }
+.arch__box { background: var(--white); border: 1px solid var(--line); border-radius: 1.2cqi; padding: 1.6cqi; display: flex; flex-direction: column; gap: 0.7cqi; min-width: 0; }
+.arch__box > b { color: var(--purple-2); font-family: var(--font-display); }
+.arch__layer { padding: 1cqi 1.4cqi; border-radius: 0.7cqi; background: var(--lavender-soft); font-size: var(--fs-small); }
+.arch__layer b { font-family: var(--font-display); color: var(--ink); }
+.arch__layer--core { background: linear-gradient(135deg, var(--purple-2), var(--purple-3)); color: var(--white); }
+.arch__layer--core b { color: var(--white); }
+.arrow { color: var(--purple); font-size: var(--fs-small); font-weight: 600; text-align: center; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0.7cqi; }
+
+/* agenda */
+.agenda { width: 100%; border-collapse: collapse; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.agenda td, .agenda th { padding: 0.42cqi 1cqi; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.agenda th { color: var(--muted); font-weight: 600; }
+.agenda td:first-child { width: 5cqi; }
+.agenda tbody td:first-child span { display: inline-grid; place-items: center; width: 2.7cqi; height: 2.7cqi; border-radius: 50%; background: var(--violet); color: var(--white); font-weight: 700; font-size: 1.2cqi; }
+.agenda td:nth-child(2) { font-weight: 700; color: var(--purple-2); }
+.agenda td:last-child, .agenda th:last-child { text-align: right; }
+.agenda tfoot td { border-bottom: 0; font-weight: 700; color: var(--ink); }
+
+/* lab slides: violet number badge like the template agenda */
+.lab-top { display: flex; align-items: center; gap: 2cqi; padding-right: var(--logo-room); }
+.lab-title { display: flex; gap: 1.8cqi; align-items: center; min-width: 0; }
+.lab-title .head { padding-right: 0; }
+.lab-num { flex: none; display: grid; place-items: center; width: 6.4cqi; height: 6.4cqi; border-radius: 50%; background: var(--violet); color: var(--white); font-family: var(--font-display); font-weight: 700; font-size: 2.3cqi; }
+.min-badge { margin-left: auto; font-size: var(--fs-small); font-weight: 700; color: var(--purple-2); background: var(--lavender); padding: 0.3em 0.8em; border-radius: 999px; white-space: nowrap; }
+.recipe { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.75cqi 1.8cqi; margin: 0; font-size: var(--fs-small); background: var(--white); border: 1px solid var(--line); border-radius: 1.2cqi; padding: 1.5cqi 1.8cqi; }
+.recipe dt { color: var(--muted); font-weight: 600; }
+.recipe dd { margin: 0; color: var(--text); }
+.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 0.5em; font-size: var(--fs-small); }
+.steps li::marker { color: var(--purple); font-weight: 700; }
+.heads-up { border-radius: 1cqi; padding: 1.3cqi 1.6cqi; background: var(--mid-soft); font-size: var(--fs-small); display: flex; flex-direction: column; gap: 0.4cqi; }
+.heads-up b:first-child { color: var(--mid); }
+.discuss { font-size: var(--fs-small); font-style: italic; font-weight: 600; color: var(--orchid); }
+.discuss::before { content: "Discuss · "; font-style: normal; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.85em; }
+
+/* comparisons */
+.cmp { width: 100%; border-collapse: collapse; font-size: var(--fs-small); background: var(--white); border-radius: 1.2cqi; overflow: hidden; }
+.cmp th, .cmp td { padding: 1cqi 1.3cqi; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.cmp th { color: var(--muted); font-weight: 600; }
+.cmp tr:last-child td { border-bottom: 0; }
+.big-stat { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--fs-h2) * 1.7); line-height: 1; color: var(--purple); font-variant-numeric: tabular-nums; }
+.stack:nth-child(2) > .big-stat { color: var(--purple-2); }
+.dims { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1cqi; }
+.dim { padding: 1.4cqi; border-radius: 1.2cqi; background: var(--white); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.5cqi; font-size: var(--fs-small); min-width: 0; }
+.dim b { font-family: var(--font-display); font-size: calc(var(--fs-body) * 1.1); }
+.dim:nth-child(1) b { color: var(--purple); }
+.dim:nth-child(2) b { color: var(--purple-2); }
+.dim:nth-child(3) b { color: var(--purple-3); }
+.dim:nth-child(4) b { color: var(--orchid); }
+.dim:nth-child(5) b { color: var(--violet); }
+.quote { position: relative; font-family: var(--font-display); font-weight: 700; font-size: calc(var(--fs-h2) * 0.85); line-height: 1.2; color: var(--orchid); max-width: 24ch; text-wrap: balance; padding-left: 5cqi; }
+.quote::before { content: "\201C"; position: absolute; left: 0; top: -1.6cqi; font-size: 8cqi; line-height: 1; }
+.fn { font-family: var(--font-mono); font-size: calc(var(--fs-h2) * 0.8); line-height: 1.3; color: var(--ink); }
+.fn .k { color: var(--purple); }
+
+/* ---------- control bar ---------- */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px));
+  padding-inline: 16px; padding-bottom: env(safe-area-inset-bottom, 0px);
+  display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); background: var(--white); color: var(--text); z-index: 3;
+}
+.bar__title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 0.9rem; }
+.bar__count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; }
+.progress { position: absolute; top: -1px; left: 0; height: 3px; background: var(--purple); transition: width 200ms ease; }
+.btn { border: 1px solid var(--line); background: var(--white); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+.btn:hover { border-color: var(--purple); color: var(--purple-2); }
+.btn[aria-pressed="true"] { background: var(--lavender); border-color: var(--purple); }
+.btn kbd { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); margin-left: 4px; }
+.timer { display: inline-flex; align-items: center; gap: 6px; }
+.timer__face { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--purple-2); font-size: 1rem; min-width: 5ch; text-align: right; }
+.timer__face.is-over { color: var(--fail); }
+.timer[hidden] { display: none !important; }
+
+/* ---------- speaker notes ---------- */
+.notes-panel {
+  position: fixed; left: 0; right: 0; bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px)); height: var(--notes-h);
+  overflow-y: auto; background: var(--white); color: var(--text); border-top: 1px solid var(--line); z-index: 2;
+  padding-inline: 24px; padding-block: 14px;
+}
+.notes-panel__inner { max-width: 110ch; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; font-size: 1rem; line-height: 1.55; }
+.notes-panel__label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--purple-2); }
+.notes-panel ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+.notes-panel p { margin: 0; }
+.notes-panel code { background: var(--lavender-soft); padding: 0.05em 0.3em; border-radius: 4px; }
+
+.help { position: fixed; inset: 0; display: grid; place-items: center; background: rgb(42 27 61 / 0.4); z-index: 5; padding-inline: 16px; }
+.help__card { background: var(--white); color: var(--text); border-radius: 10px; padding: 22px 26px; max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.help__card dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 0.95rem; }
+.help__card dt { font-family: var(--font-mono); color: var(--purple-2); }
+.help__card dd { margin: 0; }
+
+/* ---------- phones: a scrolling document ---------- */
+@media (max-width: 720px) {
+  body { overflow: auto; }
+  .viewport { height: auto; display: block; padding-inline: 16px; padding-block: 16px 24px; }
+  .deck { width: 100%; aspect-ratio: auto; container-type: normal; display: flex; flex-direction: column; gap: 16px; }
+  .slide {
+    --fs-body: 1rem; --fs-small: 0.9rem; --fs-h2: 1.45rem; --fs-h1: 2rem; --fs-mono: 0.78rem; --fs-eyebrow: 0.8rem;
+    --pad-x: 18px; --pad-top: 22px; --pad-bottom: 44px; --gap: 14px; --logo-room: 88px;
+    position: relative; inset: auto; overflow: visible;
+  }
+  .slide:not(.is-active) { visibility: visible; }
+  .slide.is-active { animation: none; }
+  .brand-logo { top: 16px; right: 16px; width: 72px; }
+  .foot { left: 18px; right: 18px; bottom: 14px; font-size: 0.62rem; gap: 8px; }
+  .foot__gt { width: 7px; }
+  .cols, .cols-3, .cols-4, .tiers, .arch, .dims { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .axes-row { grid-template-columns: minmax(0, 1fr); }
+  .times { display: none; }
+  .bar, .notes-panel { display: none; }
+  .panel, .axis, .tier, .arch__box, .dim, .recipe { padding: 12px 14px; border-radius: 10px; }
+  .lab-top { flex-wrap: wrap; }
+  .lab-num { width: 44px; height: 44px; font-size: 1.1rem; }
+  .agenda tbody td:first-child span { width: 26px; height: 26px; font-size: 0.8rem; }
+  pre { padding: 10px 12px; border-radius: 8px; }
+  .slide--cover { display: flex; flex-direction: column; gap: 14px; padding: 24px 18px 28px; min-height: 420px; }
+  .stripes { width: 22%; }
+  .cover__gt, .cover__wordmark, .cover__text, .cover__by { position: relative; left: auto; right: auto; top: auto; bottom: auto; }
+  .cover__gt { width: 30px; }
+  .cover__wordmark { width: 160px; margin-top: 24px; }
+  .cover__text { max-width: 76%; margin-top: 12px; }
+  .cover__sub { font-size: 1rem; }
+  .cover__by { margin-top: 12px; font-size: 1rem; }
+  .cover__by span { font-size: 0.9rem; }
+  .cover__by .cover__kudos { font-size: 0.8rem; max-width: none; margin-top: 6px; }
+  .slide--end { padding-left: 18px; padding-bottom: 48px; min-height: 360px; }
+  .end__sub { font-size: 1rem; }
+  .quote { font-size: 1.3rem; padding-left: 36px; }
+  .quote::before { font-size: 3.4rem; top: -8px; }
+}
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<!-- 1 · Title -->
+<section class="slide slide--cover" data-title="Title">
+  <div class="stripes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <img class="cover__gt" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTEwLjggMTIxLjYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIGlkPSJMYXllcl8yIiBvdmVyZmxvdz0iaGlkZGVuIj48ZGVmcz48Y2xpcFBhdGggaWQ9ImNsaXBwYXRoIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTEwLjgiIGhlaWdodD0iMTIxLjYiIGZpbGw9Im5vbmUiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBpZD0iTGF5ZXJfMS0yIj48ZyBpZD0iQWNjX0dUX1NvbGlkX1AyX1JHQiI+PGcgY2xpcC1wYXRoPSJ1cmwoI2NsaXBwYXRoKSI+PHBhdGggZD0iTTAgMCAwIDMxLjc1IDcxLjY1IDYwLjggMCA4OS44NSAwIDEyMS42IDExMC44IDc2LjY4IDExMC44IDQ0LjkyIDAgMFoiIGZpbGw9IiM3NTAwQzAiLz48L2c+PC9nPjwvZz48L3N2Zz4=" alt="">
+  <img class="cover__wordmark" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNTUyLjEzIDg4LjI3IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0iTGF5ZXJfMiIgb3ZlcmZsb3c9ImhpZGRlbiI+PGcgaWQ9IkxheWVyXzEtMiI+PHBhdGggZD0iTTMzLjQ1IDcyLjY2QzI4LjQgNzIuNjYgMjMuODEgNzEuODEgMTkuNjggNzAuMTIgMTUuNTUgNjguNDMgMTIuMDQgNjYuMDcgOS4xNSA2My4wNSA2LjI2IDYwLjAzIDQgNTYuNDcgMi40IDUyLjM4IDAuOCA0OC4yOSAzLjk5NjhlLTE1IDQzLjg2IDMuOTk2OGUtMTUgMzkuMTJMMy45OTY4ZS0xNSAzOC4zOEMzLjk5NjhlLTE1IDMzLjU3IDAuODIgMjkuMTEgMi40NSAyNC45OCA0LjA4IDIwLjg1IDYuMzggMTcuMyA5LjM0IDE0LjMgMTIuMyAxMS4zMSAxNS44MiA4Ljk3IDE5LjkyIDcuMjggMjQuMDEgNS41OSAyOC41MyA0Ljc0IDMzLjQ1IDQuNzQgMzguMzcgNC43NCA0Mi44OCA1LjU3IDQ2Ljk0IDcuMjQgNTEuMDEgOC45IDU0LjUgMTEuMjEgNTcuNDMgMTQuMTcgNjAuMzYgMTcuMTMgNjIuNjMgMjAuNjQgNjQuMjcgMjQuNyA2NS45IDI4Ljc3IDY2LjcyIDMzLjIzIDY2LjcyIDM4LjFMNjYuNzIgMzguODRDNjYuNzIgNDMuNjUgNjUuOTQgNDguMTEgNjQuMzcgNTIuMjQgNjIuOCA1Ni4zNyA2MC41NSA1OS45NCA1Ny42MiA2Mi45NiA1NC42OSA2NS45OCA1MS4xOCA2OC4zNSA0Ny4wOSA3MC4wOCA0MyA3MS44MSAzOC40NSA3Mi42NyAzMy40NiA3Mi42N0wzMy40NiA3Mi42N1pNMzMuNjQgNjIuNzdDMzYuNzggNjIuNzcgMzkuNiA2Mi4yIDQyLjEgNjEuMDYgNDQuNiA1OS45MiA0Ni43MiA1OC4yOSA0OC40OCA1Ni4yIDUwLjI0IDU0LjExIDUxLjU5IDUxLjU5IDUyLjU1IDQ4LjY1IDUzLjUgNDUuNzIgNTMuOTkgNDIuNDcgNTMuOTkgMzguODhMNTMuOTkgMzguMTRDNTMuOTkgMzQuNzUgNTMuNTMgMzEuNiA1Mi42IDI4LjcgNTEuNjggMjUuOCA1MC4zMyAyMy4zIDQ4LjU4IDIxLjIgNDYuODMgMTkuMSA0NC42NyAxNy40NSA0Mi4xMSAxNi4yNSAzOS41NSAxNS4wNSAzNi42NyAxNC40NCAzMy40NyAxNC40NCAzMC4yNyAxNC40NCAyNy4zMSAxNS4wMSAyNC43OCAxNi4xNSAyMi4yNSAxNy4yOSAyMC4xIDE4LjkyIDE4LjMxIDIxLjAxIDE2LjUzIDIzLjExIDE1LjE3IDI1LjYxIDE0LjI0IDI4LjUxIDEzLjMyIDMxLjQxIDEyLjg1IDM0LjY1IDEyLjg1IDM4LjIzTDEyLjg1IDM4Ljk3QzEyLjg1IDQyLjYxIDEzLjM4IDQ1Ljg5IDE0LjQyIDQ4Ljc5IDE1LjQ2IDUxLjY5IDE2LjkyIDU0LjE5IDE4Ljc2IDU2LjI5IDIwLjYxIDU4LjM5IDIyLjc5IDU5Ljk5IDI1LjMyIDYxLjEgMjcuODQgNjIuMjEgMzAuNjIgNjIuNzYgMzMuNjQgNjIuNzZMMzMuNjQgNjIuNzZaIi8+PHBhdGggZD0iTTcxLjUzIDIzLjQgODIuNzEgMjMuNCA4Mi43MSAzMS4xNkM4My4zOSAyOS45OSA4NC4yNSAyOC44OCA4NS4zIDI3LjgzIDg2LjM1IDI2Ljc4IDg3LjU2IDI1Ljg2IDg4Ljk1IDI1LjA2IDkwLjM0IDI0LjI2IDkxLjgzIDIzLjYxIDkzLjQzIDIzLjEyIDk1LjAzIDIyLjYzIDk2LjczIDIyLjM4IDk4LjUxIDIyLjM4IDEwMS41MyAyMi4zOCAxMDQuMzUgMjIuOTMgMTA2Ljk2IDI0LjA0IDEwOS41OCAyNS4xNSAxMTEuODQgMjYuNzUgMTEzLjc1IDI4Ljg1IDExNS42NiAzMC45NSAxMTcuMTcgMzMuNTEgMTE4LjI4IDM2LjU2IDExOS4zOSAzOS42MSAxMTkuOTQgNDMuMDggMTE5Ljk0IDQ2Ljk1TDExOS45NCA0Ny42OUMxMTkuOTQgNTEuNTcgMTE5LjQgNTUuMDUgMTE4LjMyIDU4LjEzIDExNy4yNCA2MS4yMSAxMTUuNzYgNjMuODMgMTEzLjg4IDY1Ljk4IDExMiA2OC4xMyAxMDkuNzUgNjkuNzggMTA3LjEzIDcwLjkzIDEwNC41MSA3Mi4wNyAxMDEuNjQgNzIuNjQgOTguNDkgNzIuNjQgOTQuNjEgNzIuNjQgOTEuMzIgNzEuODEgODguNjQgNzAuMTQgODUuOTYgNjguNDggODMuOTggNjYuNDcgODIuNjggNjQuMTNMODIuNjggODguMjUgNzEuNSA4OC4yNSA3MS41IDIzLjQgNzEuNTEgMjMuNFpNOTUuNzQgNjMuODhDOTkuODcgNjMuODggMTAzLjAzIDYyLjU0IDEwNS4yMiA1OS44NSAxMDcuNDEgNTcuMTYgMTA4LjUgNTMuMiAxMDguNSA0Ny45NEwxMDguNSA0Ny4yQzEwOC41IDQ0LjU0IDEwOC4xNyA0Mi4yMSAxMDcuNTMgNDAuMjEgMTA2Ljg4IDM4LjIxIDEwNS45NyAzNi41MiAxMDQuODEgMzUuMTYgMTAzLjY0IDMzLjggMTAyLjI5IDMyLjggMTAwLjc0IDMyLjE1IDk5LjIgMzEuNSA5Ny41MSAzMS4xOCA5NS42NiAzMS4xOCA5MS43OCAzMS4xOCA4OC41OSAzMi41IDg2LjA5IDM1LjEyIDgzLjU5IDM3Ljc0IDgyLjM1IDQxLjc3IDgyLjM1IDQ3LjIxTDgyLjM1IDQ3Ljk1QzgyLjM1IDUzLjM5IDgzLjU3IDU3LjQgODYgNjAgODguNDMgNjIuNTkgOTEuNjkgNjMuODkgOTUuNzUgNjMuODlMOTUuNzUgNjMuODlaIi8+PHBhdGggZD0iTTE0OC4zNyA3Mi42NkMxNDQuNzkgNzIuNjYgMTQxLjUyIDcyLjA5IDEzOC41MyA3MC45NSAxMzUuNTQgNjkuODEgMTMyLjk2IDY4LjE4IDEzMC43NyA2Ni4wNSAxMjguNTggNjMuOTIgMTI2Ljg5IDYxLjM1IDEyNS42OSA1OC4zNCAxMjQuNDkgNTUuMzIgMTIzLjg4IDUxLjkgMTIzLjg4IDQ4LjA4TDEyMy44OCA0Ny4zNEMxMjMuODggNDMuNTggMTI0LjQ4IDQwLjE3IDEyNS42OSAzNy4xMyAxMjYuODkgMzQuMDggMTI4LjU3IDMxLjQ2IDEzMC43MiAyOS4yOCAxMzIuODcgMjcuMDkgMTM1LjQyIDI1LjQgMTM4LjM1IDI0LjIgMTQxLjI4IDIzIDE0NC40NiAyMi4zOSAxNDcuOTIgMjIuMzkgMTUwLjk0IDIyLjM5IDE1My44MiAyMi44NSAxNTYuNTYgMjMuNzcgMTU5LjMgMjQuNjkgMTYxLjcyIDI2LjE0IDE2My44MiAyOC4xIDE2NS45MiAzMC4wNiAxNjcuNTkgMzIuNTggMTY4Ljg1IDM1LjY1IDE3MC4xMiAzOC43MiAxNzAuNzUgNDIuNCAxNzAuNzUgNDYuN0wxNzAuNzUgNDkuOTMgMTM1LjM2IDQ5LjkzQzEzNS41NCA1NC41OCAxMzYuNzYgNTguMTUgMTM5LjAxIDYwLjYzIDE0MS4yNiA2My4xMSAxNDQuNDggNjQuMzUgMTQ4LjY2IDY0LjM1IDE1Mi4wNCA2NC4zNSAxNTQuNjQgNjMuNyAxNTYuNDIgNjIuMzkgMTU4LjIgNjEuMDggMTU5LjMxIDU5LjI0IDE1OS43NSA1Ni44N0wxNzAuNTYgNTYuODdDMTY5Ljc2IDYyLjAyIDE2Ny40MiA2NS45MyAxNjMuNTQgNjguNjMgMTU5LjY2IDcxLjMyIDE1NC42IDcyLjY3IDE0OC4zOCA3Mi42N0wxNDguMzggNzIuNjdaTTE1OS42NCA0Mi41M0MxNTkuMzMgMzguMzQgMTU4LjE4IDM1LjI5IDE1Ni4xNyAzMy4zOCAxNTQuMTcgMzEuNDcgMTUxLjQxIDMwLjUyIDE0Ny45IDMwLjUyIDE0NC4zOSAzMC41MiAxNDEuNzQgMzEuNTkgMTM5LjU4IDMzLjcgMTM3LjQyIDM1LjgzIDEzNi4wNyAzOC43NyAxMzUuNTEgNDIuNTNMMTU5LjYzIDQyLjUzWiIvPjxwYXRoIGQ9Ik0xNzYuNDYgMjMuNCAxODcuNjQgMjMuNCAxODcuNjQgMzEuMDdDMTg4LjgxIDI4LjczIDE5MC43IDI2LjcgMTkzLjMzIDI0Ljk3IDE5NS45NSAyMy4yNCAxOTkuMjYgMjIuMzggMjAzLjI2IDIyLjM4IDIwNS42NiAyMi4zOCAyMDcuODggMjIuNzUgMjA5LjkxIDIzLjQ5IDIxMS45NCAyNC4yMyAyMTMuNyAyNS4zNSAyMTUuMTggMjYuODYgMjE2LjY2IDI4LjM3IDIxNy44IDMwLjMzIDIxOC42IDMyLjczIDIxOS40IDM1LjEzIDIxOS44IDM4IDIxOS44IDQxLjMyTDIxOS44IDcxLjcyIDIwOC42MiA3MS43MiAyMDguNjIgNDIuMjZDMjA4LjYyIDM4LjU2IDIwNy44NSAzNS44NiAyMDYuMzEgMzQuMTYgMjA0Ljc3IDMyLjQ2IDIwMi4zNCAzMS42MiAxOTkuMDEgMzEuNjIgMTk1Ljg3IDMxLjYyIDE5My4xOSAzMi41OSAxOTAuOTcgMzQuNTMgMTg4Ljc1IDM2LjQ4IDE4Ny42NCAzOS4zNiAxODcuNjQgNDMuMTlMMTg3LjY0IDcxLjcyIDE3Ni40NiA3MS43MiAxNzYuNDYgMjMuNCAxNzYuNDYgMjMuNFoiLz48cGF0aCBkPSJNMjUxLjg4IDcyLjU2QzI0Ny40NCA3Mi41NiAyNDMuNzEgNzEuOTkgMjQwLjY2IDcwLjg1IDIzNy42MSA2OS43MSAyMzUuMSA2OC4xOCAyMzMuMTMgNjYuMjcgMjMxLjE2IDY0LjM2IDIyOS42NiA2Mi4xNCAyMjguNjUgNTkuNjIgMjI3LjYzIDU3LjEgMjI2Ljk3IDU0LjQyIDIyNi42NiA1MS41OEwyMzQuNDIgNTEuNThDMjM0LjY2IDUzLjU1IDIzNS4xIDU1LjQyIDIzNS43MSA1Ny4xNyAyMzYuMzMgNTguOTMgMjM3LjI4IDYwLjQ3IDIzOC41NyA2MS43OSAyMzkuODYgNjMuMTEgMjQxLjU3IDY0LjE2IDI0My43IDY0LjkzIDI0NS44MyA2NS43IDI0OC41NiA2Ni4wOCAyNTEuODcgNjYuMDggMjUzLjk3IDY2LjA4IDI1NS45NCA2NS43OSAyNTcuNzggNjUuMjEgMjU5LjYzIDY0LjYzIDI2MS4yMyA2My43NyAyNjIuNTkgNjIuNjcgMjYzLjk1IDYxLjU2IDI2NS4wMSA2MC4yNCAyNjUuNzggNTguNyAyNjYuNTUgNTcuMTYgMjY2LjkzIDU1LjQ3IDI2Ni45MyA1My42MiAyNjYuOTMgNTEuNzcgMjY2LjY4IDUwLjE1IDI2Ni4xOSA0OC43NiAyNjUuNjkgNDcuMzcgMjY0Ljg1IDQ2LjE5IDI2My42NSA0NS4yMSAyNjIuNDUgNDQuMjIgMjYwLjgxIDQzLjM5IDI1OC43NSA0Mi43MSAyNTYuNjggNDIuMDMgMjU0LjA4IDQxLjQ0IDI1MC45NCA0MC45NSAyNDcuNDkgNDAuNCAyNDQuMzkgMzkuNjggMjQxLjY1IDM4LjgyIDIzOC45MSAzNy45NiAyMzYuNTggMzYuODMgMjM0LjY4IDM1LjQ0IDIzMi43NyAzNC4wNSAyMzEuMzIgMzIuMzMgMjMwLjM0IDMwLjI3IDIyOS4zNSAyOC4yMSAyMjguODYgMjUuNjkgMjI4Ljg2IDIyLjc0IDIyOC44NiAyMC4yMiAyMjkuMzkgMTcuODYgMjMwLjQzIDE1LjY3IDIzMS40NyAxMy40OCAyMzIuOTQgMTEuNTkgMjM0LjgyIDkuOTkgMjM2LjcgOC4zOSAyMzguOTMgNy4xMyAyNDEuNTIgNi4yIDI0NC4xMSA1LjI4IDI0Ni45NyA0LjgxIDI1MC4xMSA0LjgxIDI1Ni43NiA0LjgxIDI2Mi4wNSA2LjM3IDI2NS45NSA5LjQ3IDI2OS44NiAxMi41OCAyNzIuMTYgMTcuMSAyNzIuODMgMjMuMDFMMjY1LjYyIDIzLjAxQzI2NC44MiAxOC44MiAyNjMuMTkgMTUuODIgMjYwLjcyIDE0IDI1OC4yNSAxMi4xOCAyNTQuNzEgMTEuMjggMjUwLjA5IDExLjI4IDI0NS40NyAxMS4yOCAyNDIuMDkgMTIuMjggMjM5Ljc4IDE0LjI5IDIzNy40NyAxNi4yOSAyMzYuMzEgMTguODcgMjM2LjMxIDIyIDIzNi4zMSAyMy42IDIzNi41MSAyNS4wNCAyMzYuOTEgMjYuMjkgMjM3LjMxIDI3LjU2IDIzOC4wOCAyOC42NCAyMzkuMjIgMjkuNTcgMjQwLjM2IDMwLjQ5IDI0MS45NiAzMS4zMSAyNDQuMDMgMzIuMDIgMjQ2LjA5IDMyLjczIDI0OC44MiAzMy4zMyAyNTIuMiAzMy44MyAyNTUuOSAzNC4zOCAyNTkuMTMgMzUuMTIgMjYxLjkgMzYuMDUgMjY0LjY3IDM2Ljk3IDI2Ny4wMSAzOC4xOCAyNjguOTIgMzkuNjUgMjcwLjgzIDQxLjEzIDI3Mi4yNiA0Mi45NSAyNzMuMjIgNDUuMSAyNzQuMTcgNDcuMjUgMjc0LjY1IDQ5LjkxIDI3NC42NSA1My4wNSAyNzQuNjUgNTUuODIgMjc0LjA4IDU4LjQgMjcyLjk0IDYwLjc2IDI3MS44IDYzLjEzIDI3MC4yMiA2NS4yIDI2OC4xOCA2Ni45NSAyNjYuMTUgNjguNzEgMjYzLjczIDcwLjA4IDI2MC45MyA3MS4wNiAyNTguMTIgNzIuMDUgMjU1LjA5IDcyLjU0IDI1MS44MiA3Mi41NEwyNTEuODYgNzIuNTRaIi8+PHBhdGggZD0iTTI4Mi43NCAwLjMgMjkwLjUgMC4zIDI5MC41IDcxLjczIDI4Mi43NCA3MS43MyAyODIuNzQgMC4zWiIvPjxwYXRoIGQ9Ik0zMTUuMzUgNzIuNTZDMzEzLjEzIDcyLjU2IDMxMS4wNCA3Mi4yOCAzMDkuMDcgNzEuNzMgMzA3LjEgNzEuMTggMzA1LjM5IDcwLjMyIDMwMy45NCA2OS4xNCAzMDIuNDkgNjcuOTcgMzAxLjM1IDY2LjQ5IDMwMC41MiA2NC43IDI5OS42OSA2Mi45MiAyOTkuMjggNjAuNzkgMjk5LjI4IDU4LjMyIDI5OS4yOCA1NS41NSAyOTkuOTYgNTMuMjEgMzAxLjMxIDUxLjMgMzAyLjY3IDQ5LjM5IDMwNC40NyA0Ny44NSAzMDYuNzIgNDYuNjggMzA4Ljk3IDQ1LjUxIDMxMS41NSA0NC42NiAzMTQuNDggNDQuMTQgMzE3LjQxIDQzLjYxIDMyMC40MSA0My4zNiAzMjMuNDkgNDMuMzZMMzMwLjQyIDQzLjM2IDMzMC40MiAzOS44N0MzMzAuNDIgMzYuMDEgMzI5LjYyIDMzLjI0IDMyOC4wMiAzMS41NiAzMjYuNDIgMjkuODggMzIzLjc3IDI5LjA0IDMyMC4wNyAyOS4wNCAzMTMuNDIgMjkuMDQgMzA5LjcyIDMxLjkgMzA4Ljk4IDM3LjYzTDMwMS4zMSAzNy42M0MzMDEuNTYgMzQuODYgMzAyLjI1IDMyLjUyIDMwMy4zOSAzMC42MSAzMDQuNTMgMjguNyAzMDUuOTggMjcuMTQgMzA3LjczIDI1Ljk1IDMwOS40OSAyNC43NiAzMTEuNDUgMjMuODkgMzEzLjY0IDIzLjM2IDMxNS44MyAyMi44MyAzMTguMDkgMjIuNTggMzIwLjQzIDIyLjU4IDMyMi43NyAyMi41OCAzMjQuOTMgMjIuODQgMzI3LjA4IDIzLjM2IDMyOS4yMyAyMy44OSAzMzEuMTEgMjQuODEgMzMyLjcyIDI2LjEzIDMzNC4zMiAyNy40NSAzMzUuNjEgMjkuMjIgMzM2LjYgMzEuNDQgMzM3LjU5IDMzLjY2IDMzOC4wOCAzNi40NiAzMzguMDggMzkuODVMMzM4LjA4IDcxLjczIDMzMC40MSA3MS43MyAzMzAuNDEgNjUuNjNDMzI4LjYzIDY3LjkxIDMyNi41NiA2OS42MyAzMjQuMjIgNzAuOCAzMjEuODggNzEuOTcgMzE4LjkyIDcyLjU2IDMxNS4zNSA3Mi41NkwzMTUuMzUgNzIuNTZaTTMxNi4wOSA2Ni40NkMzMTguMTIgNjYuNDYgMzIwLjAyIDY2LjIgMzIxLjc4IDY1LjY4IDMyMy41NCA2NS4xNSAzMjUuMDQgNjQuNCAzMjYuMzEgNjMuNDEgMzI3LjU4IDYyLjQyIDMyOC41OCA2MS4yMSAzMjkuMzIgNTkuNzYgMzMwLjA2IDU4LjMxIDMzMC40MyA1Ni42NyAzMzAuNDMgNTQuODFMMzMwLjQzIDQ4LjggMzIzLjc4IDQ4LjhDMzIxLjM4IDQ4LjggMzE5LjE1IDQ4Ljk3IDMxNy4wOCA0OS4zMSAzMTUuMDIgNDkuNjUgMzEzLjIzIDUwLjE4IDMxMS43MiA1MC45MiAzMTAuMjEgNTEuNjYgMzA5LjA0IDUyLjYzIDMwOC4yMSA1My44MyAzMDcuMzggNTUuMDMgMzA2Ljk3IDU2LjUyIDMwNi45NyA1OC4zMSAzMDYuOTcgNjAuODMgMzA3LjY1IDYyLjgyIDMwOSA2NC4yNyAzMTAuMzYgNjUuNzIgMzEyLjcyIDY2LjQ0IDMxNi4xMiA2Ni40NEwzMTYuMTEgNjYuNDRaIi8+PHBhdGggZD0iTTM0Mi4zNyAyMy40IDM1MC42OSAyMy40IDM2NS4wMSA2My45NyAzNzkuMTUgMjMuNCAzODcuMSAyMy40IDM2OS43MyA3MS43MyAzNTkuOTMgNzEuNzMgMzQyLjM3IDIzLjRaIi8+PHBhdGggZD0iTTQwNC43NyA3Mi41NkM0MDIuNTUgNzIuNTYgNDAwLjQ2IDcyLjI4IDM5OC40OSA3MS43MyAzOTYuNTIgNzEuMTggMzk0LjgxIDcwLjMyIDM5My4zNiA2OS4xNCAzOTEuOTEgNjcuOTcgMzkwLjc3IDY2LjQ5IDM4OS45NCA2NC43IDM4OS4xMSA2Mi45MiAzODguNyA2MC43OSAzODguNyA1OC4zMiAzODguNyA1NS41NSAzODkuMzggNTMuMjEgMzkwLjczIDUxLjMgMzkyLjA5IDQ5LjM5IDM5My44OSA0Ny44NSAzOTYuMTQgNDYuNjggMzk4LjM5IDQ1LjUxIDQwMC45NyA0NC42NiA0MDMuOSA0NC4xNCA0MDYuODMgNDMuNjEgNDA5LjgzIDQzLjM2IDQxMi45MSA0My4zNkw0MTkuODQgNDMuMzYgNDE5Ljg0IDM5Ljg3QzQxOS44NCAzNi4wMSA0MTkuMDQgMzMuMjQgNDE3LjQ0IDMxLjU2IDQxNS44NCAyOS44OCA0MTMuMTkgMjkuMDQgNDA5LjQ5IDI5LjA0IDQwMi44NCAyOS4wNCAzOTkuMTQgMzEuOSAzOTguNCAzNy42M0wzOTAuNzMgMzcuNjNDMzkwLjk4IDM0Ljg2IDM5MS42NyAzMi41MiAzOTIuODEgMzAuNjEgMzkzLjk1IDI4LjcgMzk1LjQgMjcuMTQgMzk3LjE1IDI1Ljk1IDM5OC45IDI0Ljc2IDQwMC44NyAyMy44OSA0MDMuMDYgMjMuMzYgNDA1LjI1IDIyLjgzIDQwNy41MSAyMi41OCA0MDkuODUgMjIuNTggNDEyLjE5IDIyLjU4IDQxNC4zNSAyMi44NCA0MTYuNSAyMy4zNiA0MTguNjUgMjMuODkgNDIwLjUzIDI0LjgxIDQyMi4xNCAyNi4xMyA0MjMuNzQgMjcuNDUgNDI1LjAzIDI5LjIyIDQyNi4wMiAzMS40NCA0MjcuMDEgMzMuNjYgNDI3LjUgMzYuNDYgNDI3LjUgMzkuODVMNDI3LjUgNzEuNzMgNDE5LjgzIDcxLjczIDQxOS44MyA2NS42M0M0MTguMDUgNjcuOTEgNDE1Ljk4IDY5LjYzIDQxMy42NCA3MC44IDQxMS4zIDcxLjk3IDQwOC4zNCA3Mi41NiA0MDQuNzcgNzIuNTZMNDA0Ljc3IDcyLjU2Wk00MDUuNTEgNjYuNDZDNDA3LjU0IDY2LjQ2IDQwOS40NCA2Ni4yIDQxMS4yIDY1LjY4IDQxMi45NiA2NS4xNSA0MTQuNDYgNjQuNCA0MTUuNzMgNjMuNDEgNDE3IDYyLjQyIDQxOCA2MS4yMSA0MTguNzQgNTkuNzYgNDE5LjQ4IDU4LjMxIDQxOS44NSA1Ni42NyA0MTkuODUgNTQuODFMNDE5Ljg1IDQ4LjggNDEzLjIgNDguOEM0MTAuOCA0OC44IDQwOC41NyA0OC45NyA0MDYuNSA0OS4zMSA0MDQuNDQgNDkuNjUgNDAyLjY1IDUwLjE4IDQwMS4xNCA1MC45MiAzOTkuNjMgNTEuNjYgMzk4LjQ2IDUyLjYzIDM5Ny42MyA1My44MyAzOTYuOCA1NS4wMyAzOTYuMzkgNTYuNTIgMzk2LjM5IDU4LjMxIDM5Ni4zOSA2MC44MyAzOTcuMDcgNjIuODIgMzk4LjQyIDY0LjI3IDM5OS43OCA2NS43MiA0MDIuMTQgNjYuNDQgNDA1LjU0IDY2LjQ0TDQwNS41MyA2Ni40NFoiLz48cGF0aCBkPSJNNDMxLjY2IDIyLjU1IDQzOS4zMyAwIDQ1MS4yNSA0LjM0IDQzOS4yNCAyNS42OSA0MzEuNjYgMjIuNTVaIi8+PHBhdGggZD0iTTQ0OC45MyA2OS41MSA0NzMuODggNDMuMjFDNDc3LjAyIDM5Ljg5IDQ3OS40OSAzNi43MyA0ODEuMjcgMzMuNzEgNDgzLjA1IDMwLjcgNDgzLjk1IDI3LjYzIDQ4My45NSAyNC40OCA0ODMuOTUgMjEuMzMgNDgzLjEgMTguODkgNDgxLjQxIDE3LjEgNDc5LjcyIDE1LjMyIDQ3Ny4yNyAxNC40MyA0NzQuMDcgMTQuNDMgNDcwLjg3IDE0LjQzIDQ2OC4wOCAxNS40NSA0NjYuMDggMTcuNDggNDY0LjA4IDE5LjUxIDQ2Mi44IDIyLjg3IDQ2Mi4yNCAyNy41NUw0NTAuOTcgMjcuNTVDNDUxLjQgMjAuMjUgNDUzLjY2IDE0LjYyIDQ1Ny43NyAxMC42NiA0NjEuODYgNi43IDQ2Ny40MiA0LjcyIDQ3NC40NSA0LjcyIDQ3Ny44NCA0LjcyIDQ4MC44OSA1LjIgNDgzLjYgNi4xNiA0ODYuMzEgNy4xMSA0ODguNiA4LjQ0IDQ5MC40OCAxMC4xMyA0OTIuMzYgMTEuODIgNDkzLjc5IDEzLjg4IDQ5NC43NyAxNi4yOCA0OTUuNzYgMTguNjggNDk2LjI1IDIxLjMzIDQ5Ni4yNSAyNC4yMyA0OTYuMjUgMjguNTQgNDk1LjA4IDMyLjYxIDQ5Mi43NCAzNi40NCA0OTAuNCA0MC4yNiA0ODcuMjYgNDQuMDggNDgzLjMxIDQ3LjkxTDQ2OC42MiA2Mi4yMSA0OTYuNzEgNjIuMjEgNDk2LjcxIDcxLjczIDQ0OC45MyA3MS43MyA0NDguOTMgNjkuNTEgNDQ4LjkzIDY5LjUxWiIvPjxwYXRoIGQ9Ik01MjcuNzIgNzIuNjZDNTIyLjkxIDcyLjY2IDUxOC44NiA3MS44NiA1MTUuNTYgNzAuMjYgNTEyLjI2IDY4LjY2IDUwOS42IDY2LjQ3IDUwNy41NyA2My43IDUwNS41NCA2MC45MyA1MDQuMDcgNTcuNjYgNTAzLjE4IDUzLjkgNTAyLjI4IDUwLjE0IDUwMS44NCA0Ni4wNyA1MDEuODQgNDEuN0w1MDEuODQgNDAuMTNDNTAxLjg0IDM0LjQgNTAyLjUyIDI5LjMzIDUwMy44NyAyNC45MyA1MDUuMjMgMjAuNTIgNTA3LjEyIDE2LjgzIDUwOS41NiAxMy44NCA1MTEuOTkgMTAuODUgNTE0Ljg5IDguNTkgNTE4LjI1IDcuMDQgNTIxLjYxIDUuNDkgNTI1LjI2IDQuNzMgNTI5LjIgNC43MyA1MzUuMjQgNC43MyA1NDAuMTMgNi4xOSA1NDMuODkgOS4xMiA1NDcuNjUgMTIuMDUgNTQ5LjkzIDE2LjQxIDU1MC43MyAyMi4yTDUzOS4yNyAyMi4yQzUzOC42NSAxOS42OCA1MzcuNjEgMTcuNzIgNTM2LjEzIDE2LjM0IDUzNC42NSAxNC45NSA1MzIuMzEgMTQuMjYgNTI5LjExIDE0LjI2IDUyNC42NyAxNC4yNiA1MjEuMSAxNi4xOSA1MTguMzkgMjAuMDMgNTE1LjY3IDIzLjg4IDUxNC4yMyAyOS42IDUxNC4wNSAzNy4xNyA1MTUuNTkgMzQuNTggNTE3LjcyIDMyLjUyIDUyMC40MyAzMC45OCA1MjMuMTQgMjkuNDQgNTI2LjQ3IDI4LjY3IDUzMC40MSAyOC42NyA1MzMuNTUgMjguNjcgNTM2LjQ3IDI5LjIgNTM5LjE1IDMwLjI0IDU0MS44MyAzMS4yOCA1NDQuMTMgMzIuNzUgNTQ2LjAzIDM0LjYzIDU0Ny45NCAzNi41MSA1NDkuNDMgMzguNzcgNTUwLjUyIDQxLjQyIDU1MS41OSA0NC4wNyA1NTIuMTMgNDYuOTkgNTUyLjEzIDUwLjIgNTUyLjEzIDUzLjQxIDU1MS41NiA1Ni41OCA1NTAuNDIgNTkuMzUgNTQ5LjI4IDYyLjEyIDU0Ny42NSA2NC41IDU0NS41MiA2Ni40NyA1NDMuMzkgNjguNDQgNTQwLjg0IDY5Ljk3IDUzNy44NSA3MS4wNSA1MzQuODYgNzIuMTMgNTMxLjQ5IDcyLjY2IDUyNy43MyA3Mi42Nkw1MjcuNzIgNzIuNjZaTTUyNy41NCA2My42QzUzMS4yNCA2My42IDUzNC4yMiA2Mi40IDUzNi41IDYwIDUzOC43OCA1Ny42IDUzOS45MiA1NC40MyA1MzkuOTIgNTAuNDggNTM5LjkyIDQ2LjUzIDUzOC44MSA0My4yNiA1MzYuNTkgNDAuODMgNTM0LjM3IDM4LjQgNTMxLjM1IDM3LjE4IDUyNy41MyAzNy4xOCA1MjUuNjggMzcuMTggNTIzLjk4IDM3LjQ5IDUyMi40IDM4LjEgNTIwLjgyIDM4LjcxIDUxOS40NyAzOS41OCA1MTguMzMgNDAuNjkgNTE3LjE5IDQxLjggNTE2LjMxIDQzLjEyIDUxNS42OSA0NC42NiA1MTUuMDcgNDYuMiA1MTQuNzcgNDcuODkgNTE0Ljc3IDQ5Ljc0IDUxNC43NyA1NC4xOCA1MTUuOTYgNTcuNTkgNTE4LjMyIDYwIDUyMC42OSA2Mi40IDUyMy43NiA2My42IDUyNy41MSA2My42TDUyNy41MSA2My42WiIvPjwvZz48L3N2Zz4=" alt="OpenSlava'26">
+  <div class="cover__text">
+    <h1>Evaluating Generative-AI Systems</h1>
+    <p class="cover__sub">A hands-on workshop: prompts × models × mechanisms</p>
+    <div class="cover__by"><b>Julio Palma · Jorge Hidalgo</b><span>8 labs · local models · no API key needed</span><span class="cover__kudos"><b>Kudos</b> to José María Gutiérrez, who created the workshop repository and all its evaluation cases</span></div>
+  </div>
+  <aside class="notes">
+    <p><b>~5 min.</b> Welcome. Introduce both speakers, Julio and Jorge, and say what people leave with: a working eval app on their laptop and a way to put a number on "is this model good enough?".</p>
+    <ul><li>Show of hands: who has shipped something with an LLM? Who measured it with more than a few manual tries?</li>
+    <li>Thank José María Gutiérrez: he built the repository, the app and every evaluation case the labs use.</li>
+    <li>Move to the next slide straight away so downloads start while you talk.</li></ul>
+  </aside>
+</section>
+
+<!-- 2 · Start now -->
+<section class="slide slide--dense" data-title="Start this now">
+  <div class="head"><span class="eyebrow">Before we talk</span><h2>Start the downloads now</h2>
+  <p class="lede">The models are several GB. Let them download while we cover the ideas.</p></div>
+  <div class="cols">
+    <div class="stack">
+      <h3>1 · Get the code and the models</h3>
+<pre>REPO=https://github.com/TheTechOddBug
+git clone $REPO/openslava26-workshop-evaluations
+cd openslava26-workshop-evaluations
+
+ollama pull qwen3:4b       # candidate
+ollama pull llama3.2:3b    # judge</pre>
+      <h3>2 · Backend (Python 3.11+)</h3>
+<pre>cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+workshop-evals     # API on http://localhost:8000</pre>
+    </div>
+    <div class="stack">
+      <h3>3 · Frontend (Node 18+)</h3>
+<pre>cd frontend
+npm install
+npm run dev        # http://localhost:5173</pre>
+      <div class="panel panel--accent">
+        <h3>No Ollama, no keys?</h3>
+        <p class="small">Start the backend in offline demo mode. Every screen works, but the answers are canned, so the scores mean nothing.</p>
+<pre>WORKSHOP_EVALS_FAKE_LLM=1 workshop-evals</pre>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <p><b>~5 min, then keep going while installs run.</b> Leave this slide up for a minute. Walk the room at the first lab to catch failed installs.</p>
+    <ul><li>Optional third model for the code labs: <code>ollama pull qwen2.5-coder:7b</code> (4.7 GB).</li>
+    <li>On your laptop the ports are 8001 / 5174 because an SSH tunnel holds 8000 / 5173. <code>frontend/.env</code> already sets them.</li>
+    <li><code>workshop-evals</code> is the backend's own launcher, the same server as the uvicorn command in the README. Other ports: <code>WORKSHOP_EVALS_PORT=8001 workshop-evals</code> plus <code>BACKEND_PORT=8001 FRONTEND_PORT=5174 npm run dev</code>.</li><li>The port settings and the README note need the configurable-ports change. Make sure it is merged or pushed before the session, or drop that line.</li></ul>
+  </aside>
+</section>
+
+<!-- 3 · Problem -->
+<section class="slide" data-title="It looks good">
+  <div class="head"><span class="eyebrow">The problem</span><h2>"It looks good" is not an evaluation</h2></div>
+  <div class="cols">
+    <div class="stack">
+      <p>You wire a model into your app, try a few questions, read the answers, and decide it works. Then you change the prompt. Did it get better?</p>
+      <ul class="list">
+        <li>You can't tell whether the model improved between versions.</li>
+        <li>You can't tell whether a prompt change helped or hurt.</li>
+        <li>You don't see the regressions on inputs you didn't try.</li>
+      </ul>
+    </div>
+    <div class="stack" style="justify-content:center">
+      <p class="quote">"Spend time establishing success criteria first."</p>
+      <p class="small muted">Anthropic documentation, on building evaluations</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p><b>~3 min.</b> Ask the room: "How do you know your last prompt change was an improvement?" Most people will say they looked at a few outputs.</p>
+    <p>The point: evaluation comes before improvement. Without it, prompt work is guessing.</p>
+  </aside>
+</section>
+
+<!-- 4 · Evaluation is a function -->
+<section class="slide" data-title="An evaluation is a function">
+  <div class="head"><span class="eyebrow">The fix</span><h2>An evaluation is a function that returns a number</h2></div>
+  <p class="fn"><span class="k">score</span> = evaluate(case, response) <span class="muted">→ 0.0 … 1.0</span></p>
+  <div class="cols-3">
+    <div class="panel panel--p1"><h3>Track it</h3><p class="small">The same cases every run. Watch the number move across model versions and prompt changes.</p></div>
+    <div class="panel panel--p2"><h3>Compare it</h3><p class="small">Two models, two prompts, side by side on identical inputs. The difference is the effect of your change.</p></div>
+    <div class="panel panel--p4"><h3>Gate on it</h3><p class="small">Put a threshold in CI. A drop below it blocks the release, like a failing unit test.</p></div>
+  </div>
+  <aside class="notes">
+    <p><b>~2 min.</b> Keep this short. Everything in the workshop is a different way of writing that one function, from a string comparison to a second model acting as a grader.</p>
+  </aside>
+</section>
+
+<!-- 5 · Matrix -->
+<section class="slide" data-title="The matrix">
+  <div class="head"><span class="eyebrow">The mental model</span><h2>Prompts × models × mechanisms</h2></div>
+  <div class="axes-row">
+    <div class="axis"><span class="axis__x">cases</span><span class="axis__name">Prompts</span><p class="small">The input plus what a grader needs: a reference answer, unit tests, a SQL schema, a rubric.</p></div>
+    <span class="times">×</span>
+    <div class="axis"><span class="axis__x">candidates</span><span class="axis__name">Models</span><p class="small">A model and its settings: temperature, max tokens, reasoning effort, and an optional prompt override.</p></div>
+    <span class="times">×</span>
+    <div class="axis"><span class="axis__x">scorers</span><span class="axis__name">Mechanisms</span><p class="small">The function that scores the response, from exact match to an LLM judge.</p></div>
+  </div>
+  <div class="cell-def">
+    <b>Each cell gives you</b>
+    <span class="chip chip--plain">response</span><span class="chip chip--pass">score 0.91</span><span class="chip chip--pass">verdict pass</span><span class="chip chip--plain">412 tokens</span><span class="chip chip--plain">1.8 s</span><span class="chip chip--plain">$0.0000</span>
+  </div>
+  <aside class="notes">
+    <p><b>~3 min.</b> This slide is the whole workshop. Every lab fixes two axes and varies the third.</p>
+    <ul><li>Lab 02 varies the prompt with the model fixed.</li><li>Labs 01, 03, 04 and 05 vary the mechanism on one response.</li><li>Lab 07 sweeps all three.</li></ul>
+  </aside>
+</section>
+
+<!-- 6 · Spectrum -->
+<section class="slide" data-title="Mechanism spectrum">
+  <div class="head"><span class="eyebrow">Ten mechanisms, four tiers</span><h2>From free and exact to flexible and costly</h2></div>
+  <div class="tiers">
+    <div class="tier"><span class="tier__n">Tier 1</span><h3>Deterministic</h3><div><span class="mech">exact_match</span><span class="mech">numeric</span><span class="mech">regex</span><span class="mech">json_schema</span><span class="mech">code_exec</span><span class="mech">sql_exec</span></div><p class="small muted">No model call. Same answer every run. Needs a structured reference.</p></div>
+    <div class="tier"><span class="tier__n">Tier 2</span><h3>Similarity</h3><div><span class="mech">bleu</span><span class="mech">rouge_l</span><span class="mech">fuzzy</span></div><p class="small muted">No model call. Measures word overlap with a reference, not meaning.</p></div>
+    <div class="tier"><span class="tier__n">Tier 3</span><h3>LLM as judge</h3><div><span class="mech">llm_judge</span></div><p class="small muted">A second model scores five dimensions. Handles paraphrase and open-ended quality.</p></div>
+    <div class="tier"><span class="tier__n">Tier 4</span><h3>Meta-evaluation</h3><div><span class="mech">judge vs judge</span></div><p class="small muted">Measures whether the judge itself can be trusted, against a stronger reference judge.</p></div>
+  </div>
+  <div class="gradient-axis"><span>free · fast · reproducible</span><span class="line"></span><span>costly · slower · handles nuance</span></div>
+  <aside class="notes">
+    <p><b>~3 min.</b> The rule of thumb: use the cheapest mechanism that fits the shape of the task. Classification gets exact match, code gets tests, open-ended text gets a judge, and the judge gets checked.</p>
+  </aside>
+</section>
+
+<!-- 7 · App -->
+<section class="slide" data-title="The app">
+  <div class="head"><span class="eyebrow">What you just installed</span><h2>Evaluation Lab</h2></div>
+  <div class="arch">
+    <div class="arch__box"><b>Web app</b><span class="small muted">React + TypeScript · Vite<br>localhost:5173</span></div>
+    <span class="arrow">HTTP / OpenAPI →</span>
+    <div class="arch__box">
+      <div class="arch__layer"><b>HTTP API</b> · FastAPI · <code>/docs</code> on :8000</div>
+      <div class="arch__layer"><b>Use cases</b> · run matrix, compare, ensemble, judge agreement</div>
+      <div class="arch__layer arch__layer--core"><b>Scoring logic</b> · pure Python, no I/O</div>
+      <div class="arch__layer"><b>Adapters</b> · Ollama & OpenAI-compatible, Anthropic, JSONL datasets</div>
+    </div>
+  </div>
+  <div class="stack">
+    <span class="small muted">Seven tabs</span>
+    <div class="tabs"><span class="chip chip--plain">Playground</span><span class="chip chip--plain">Matrix</span><span class="chip chip--plain">Compare</span><span class="chip chip--plain">Ensemble</span><span class="chip chip--plain">Judge reliability</span><span class="chip chip--plain">Datasets</span><span class="chip chip--plain">Models</span></div>
+  </div>
+  <aside class="notes">
+    <p><b>~3 min.</b> Ports and adapters: the scoring logic has no web framework or SDK in it, so every scorer is short enough to read in a minute. Invite people to open <code>backend/src/workshop_evals/domain/scoring/</code> during the labs.</p>
+    <p>The frontend is replaceable. The same API works from a notebook or a CI script, which is how Lab 07 ends.</p>
+  </aside>
+</section>
+
+<!-- 8 · Agenda -->
+<section class="slide" data-title="Agenda">
+  <div class="head"><span class="eyebrow">The plan</span><h2>Eight labs, each building on the last</h2></div>
+  <table class="agenda">
+    <thead><tr><th>Lab</th><th>Topic</th><th>Core idea</th><th>Tab</th><th>Min</th></tr></thead>
+    <tbody>
+      <tr><td><span>00</span></td><td>Introduction</td><td>Tour the app and the matrix</td><td>all</td><td>10</td></tr>
+      <tr><td><span>01</span></td><td>Deterministic evaluation</td><td>Exact match gives you a baseline</td><td>Playground</td><td>15</td></tr>
+      <tr><td><span>02</span></td><td>Prompt refinement</td><td>A better prompt can close the gap to a bigger model</td><td>Matrix</td><td>20</td></tr>
+      <tr><td><span>03</span></td><td>Similarity metrics</td><td>Overlap is not meaning</td><td>Playground</td><td>15</td></tr>
+      <tr><td><span>04</span></td><td>Execution-based evaluation</td><td>The grader for code is code</td><td>Playground</td><td>20</td></tr>
+      <tr><td><span>05</span></td><td>LLM as judge</td><td>Five dimensions, scored by a second model</td><td>Playground</td><td>20</td></tr>
+      <tr><td><span>06</span></td><td>Judge reliability</td><td>Who judges the judge?</td><td>Judge reliability</td><td>25</td></tr>
+      <tr><td><span>07</span></td><td>The full matrix</td><td>Sweep everything, then gate in CI</td><td>Matrix</td><td>20</td></tr>
+    </tbody>
+    <tfoot><tr><td></td><td>Plus 30 min of talk and wrap-up</td><td></td><td></td><td>175</td></tr></tfoot>
+  </table>
+  <aside class="notes">
+    <p><b>~1 min.</b> These times are a suggestion for a 3-hour slot. Use the timer button on each lab slide. If you run short, Lab 03 and the Compare/Ensemble part of Lab 06 are the easiest to shorten.</p>
+  </aside>
+</section>
+
+<!-- 9 · Lab 00 -->
+<section class="slide" data-title="Lab 00 · Introduction" data-minutes="10">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">00</span><div class="head"><span class="eyebrow">Lab</span><h2>Tour the app</h2></div></div><span class="min-badge">10 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <h3>Do</h3>
+      <ol class="steps">
+        <li>Open <code>localhost:5173</code>. Find the subtitle "prompts · models · evaluation mechanisms".</li>
+        <li><b>Playground</b>: pick <code>sentiment_classification</code>. Hover a greyed mechanism to see why it is unavailable.</li>
+        <li><b>Matrix</b>: find the Cases, Candidates and Mechanisms cards.</li>
+        <li><b>Datasets</b>: open a case and see which fields unlock which mechanisms.</li>
+        <li><b>Models</b>: check your local models show up.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Watch for</h3>
+      <p class="small">Mechanisms are enabled per case. SQL execution needs a schema, code execution needs tests. The data decides what you can measure.</p>
+      <div class="spacer"></div>
+      <p class="discuss">Think of a task you used a model for recently. Could you write "correct" as a reference string, a JSON schema or a rubric?</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Use this lab as install triage. Anyone whose backend is not up yet can start in demo mode and switch later.</p>
+    <p>The lab text mentions three tabs. The app has seven; Compare and Ensemble come back in Lab 06.</p>
+  </aside>
+</section>
+
+<!-- 10 · Lab 01 -->
+<section class="slide" data-title="Lab 01 · Deterministic evaluation" data-minutes="15">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">01</span><div class="head"><span class="eyebrow">Lab · Playground</span><h2>Put a number on it</h2></div></div><span class="min-badge">15 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Prompt</dt><dd><code>sentiment_classification</code> · <code>sent-01</code></dd>
+        <dt>Candidate</dt><dd>Qwen3 4B (local)</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">Exact match</span>, then add <span class="mech">LLM judge</span></dd>
+        <dt>Judge</dt><dd>Llama 3.2 3B (local)</dd>
+      </dl>
+      <ol class="steps">
+        <li>Exact match only. <b>Evaluate</b>. Read the response and the 1.0 / 0.0.</li>
+        <li>Step through cases. Try <code>sent-08</code> (sarcasm) and <code>sent-13</code> (hedged).</li>
+        <li>Add the LLM judge. Find a case where the two disagree.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Watch for</h3>
+      <ul class="list small">
+        <li>Exact match is binary. Averaged over cases, it becomes accuracy.</li>
+        <li>It passes when the label appears anywhere in the answer, so a full sentence still passes.</li>
+        <li>The judge is continuous. What would 0.6 mean for a classifier?</li>
+      </ul>
+      <div class="spacer"></div>
+      <p class="discuss">Would you trust 100% on 5 cases? On 50?</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Exact match normalises case and trailing punctuation, then checks whether the reference is contained in the response. The lab text suggests extra words cause failures. In practice, failures mean a wrong label, or an answer that mentions two labels.</p>
+    <p>Llama 3.2 3B tends to answer "I would classify this as positive." It still passes, which is a good prompt to discuss how lenient a grader should be.</p>
+  </aside>
+</section>
+
+<!-- 11 · Concept: prompt vs model -->
+<section class="slide" data-title="Prompt or model?">
+  <div class="head"><span class="eyebrow">Concept · Lab 02</span><h2>Before you buy a bigger model, fix the prompt</h2></div>
+  <div class="cols">
+    <div class="stack">
+      <div class="cols">
+        <div class="stack"><span class="big-stat">85%</span><p class="small">Claude Haiku with a minimal prompt, on a complaint classification task</p></div>
+        <div class="stack"><span class="big-stat">100%</span><p class="small">The same Haiku model, with category definitions and nine few-shot examples</p></div>
+      </div>
+      <p class="small muted">From Anthropic's prompt evaluation course, cited in the Lab 02 notes.</p>
+    </div>
+    <div class="stack">
+      <h3>A refined prompt adds</h3>
+      <ul class="list small">
+        <li>The exact labels allowed, with a definition for each</li>
+        <li>A few worked examples, including edge cases</li>
+        <li>A strict output format: "exactly one word"</li>
+        <li>A rule for ambiguous input: "if mixed, answer neutral"</li>
+      </ul>
+      <p class="small">Prompt work is a one-time cost. A larger model is a cost on every call.</p>
+    </div>
+  </div>
+  <aside class="notes"><p><b>~3 min.</b> Set up the experiment: hold the model fixed, change only the prompt. Any score difference is the prompt's effect.</p></aside>
+</section>
+
+<!-- 12 · Lab 02 -->
+<section class="slide" data-title="Lab 02 · Prompt refinement" data-minutes="20">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">02</span><div class="head"><span class="eyebrow">Lab · Matrix</span><h2>Same model, two prompts</h2></div></div><span class="min-badge">20 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Cases</dt><dd><code>sentiment_classification</code></dd>
+        <dt>Candidate 1</dt><dd>Label <code>naive</code> · Llama 3.2 3B · no override</dd>
+        <dt>Candidate 2</dt><dd>Label <code>refined</code> · same model · refined prompt override</dd>
+        <dt>Mechanism</dt><dd><span class="mech">Exact match</span></dd>
+      </dl>
+      <ol class="steps">
+        <li>Set up both candidates with <b>Add candidate</b>.</li>
+        <li><b>Run matrix</b>. Count green chips per column, then compare the <b>Tokens</b> row.</li>
+        <li>Where <code>naive</code> fails and <code>refined</code> passes, read the naive answer.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <div class="heads-up"><b>Tip: end the override with <code>{prompt}</code></b><span>The app puts each case's own prompt there, so one refined template runs across every case you tick.</span></div>
+      <p class="small">The dataset prompts already list the three labels. If <code>naive</code> passes everything, write a deliberately vague override to force a gap.</p>
+      <div class="spacer"></div>
+      <p class="discuss">When does a refined prompt start to overfit the evaluation set?</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Have people tick 5–8 cases, including <code>sent-08</code>, <code>sent-09</code> and <code>sent-13</code>. The refined template ends with <code>{prompt}</code>, which the app replaces with each case's prompt; the Lab Companion has it ready to copy. An override without <code>{prompt}</code> sends the same text for every case.</p>
+    <p>Point at the Tokens row: in a test run on Llama 3.2 3B over eight cases, naive used 680 in · 423 out and refined 1,360 in · 16 out. The refined prompt doubles the input but cuts the output to one word per answer.</p>
+  </aside>
+</section>
+
+<!-- 13 · Concept: overlap vs meaning -->
+<section class="slide" data-title="Overlap is not meaning">
+  <div class="head"><span class="eyebrow">Concept · Lab 03</span><h2>Overlap metrics count words, not meaning</h2>
+  <p class="lede">Source: "The merger was approved by regulators after six months of review."</p></div>
+  <table class="cmp">
+    <thead><tr><th>Summary</th><th>Meaning</th><th>ROUGE-L</th><th>A judge would say</th></tr></thead>
+    <tbody>
+      <tr><td>A · "Regulators approved the merger following a six-month review period."</td><td><span class="chip chip--pass">correct</span></td><td><span class="chip chip--pass">high</span></td><td>good</td></tr>
+      <tr><td>B · "The merger received approval after a lengthy regulatory review."</td><td><span class="chip chip--pass">correct</span></td><td><span class="chip chip--fail">lower</span></td><td>good</td></tr>
+      <tr><td>C · "The merger was rejected by regulators after six months."</td><td><span class="chip chip--fail">wrong</span></td><td><span class="chip chip--mid">moderate</span></td><td>bad</td></tr>
+    </tbody>
+  </table>
+  <p class="small">ROUGE-L ranks A &gt; C &gt; B and puts the wrong answer above a correct paraphrase. BLEU measures n-gram precision, ROUGE-L longest-common-subsequence recall, fuzzy match character edits.</p>
+  <aside class="notes"><p><b>~3 min.</b> These metrics are still useful as a cheap first signal: below 0.2 ROUGE-L, a summary is probably missing content. Just don't read them as quality.</p></aside>
+</section>
+
+<!-- 14 · Lab 03 -->
+<section class="slide" data-title="Lab 03 · Similarity metrics" data-minutes="15">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">03</span><div class="head"><span class="eyebrow">Lab · Playground</span><h2>Three overlap scores and a judge</h2></div></div><span class="min-badge">15 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Prompt</dt><dd><code>summarization</code> · <code>summ-101</code>, then <code>summ-102</code></dd>
+        <dt>Candidate</dt><dd>Any local model</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">BLEU</span><span class="mech">ROUGE-L</span><span class="mech">Fuzzy match</span>, then <span class="mech">LLM judge</span></dd>
+      </dl>
+      <ol class="steps">
+        <li>Run the three similarity scores. Read each detail string.</li>
+        <li>Add the judge and run again. Does it agree with ROUGE-L?</li>
+        <li>Try a second case. How does BLEU react to a short summary?</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Watch for</h3>
+      <ul class="list small">
+        <li>Low ROUGE-L with a high judge score: a good paraphrase the counter missed.</li>
+        <li>High ROUGE-L with low BLEU: long answer that covers the reference and adds more.</li>
+        <li>Exact match is still selectable here. Tick it and watch it fail on free text.</li>
+      </ul>
+      <div class="spacer"></div>
+      <p class="discuss">Where in your work would ROUGE-L be a safe proxy, and where would it be dangerous on its own?</p>
+    </div>
+  </div>
+  <aside class="notes"><p>The lab text says exact match is greyed out for summaries. It isn't: it is enabled for any case with a reference. Use that as a quick demonstration of a mechanism that doesn't fit the task.</p>
+  <p>If Qwen3 4B returns an empty response on these long prompts, raise Max tokens. It spends tokens thinking first.</p></aside>
+</section>
+
+<!-- 15 · Concept: code is the grader -->
+<section class="slide" data-title="The grader for code is code">
+  <div class="head"><span class="eyebrow">Concept · Lab 04</span><h2>The grader for code is code</h2></div>
+  <div class="cols-3">
+    <div class="panel"><h3><span class="mech">code_exec</span></h3><p class="small">Extract the code from the answer (fences, <code>&lt;think&gt;</code> tags and prose are handled), append the case's tests, run it in a subprocess. Exit code 0 means 1.0.</p></div>
+    <div class="panel"><h3><span class="mech">sql_exec</span></h3><p class="small">Run the model's query and the reference query on an in-memory SQLite database. Compare result sets: ordered if the reference has <code>ORDER BY</code>, any order otherwise.</p></div>
+    <div class="panel"><h3><span class="mech">numeric</span></h3><p class="small">Take the final number in the answer and compare it with the reference within 1%. Arithmetic is graded by arithmetic.</p></div>
+  </div>
+  <p>A loop or a list comprehension, a join or a subquery: the grader doesn't care how the answer is written, only whether it works.</p>
+  <aside class="notes"><p><b>~2 min.</b> Deterministic and functional. If you can write the acceptance criteria as tests, do that before reaching for a judge.</p></aside>
+</section>
+
+<!-- 16 · Lab 04 -->
+<section class="slide" data-title="Lab 04 · Execution-based evaluation" data-minutes="20">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">04</span><div class="head"><span class="eyebrow">Lab · Playground</span><h2>Run the answer</h2></div></div><span class="min-badge">20 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Code</dt><dd><code>code_generation</code> · <code>code-101</code>… · <span class="mech">Code execution</span></dd>
+        <dt>SQL</dt><dd><code>sql</code> · <code>sql-101</code>… · <span class="mech">SQL execution</span></dd>
+        <dt>Numbers</dt><dd><code>reasoning</code> · <code>reason-101</code> · <span class="mech">Numeric tolerance</span></dd>
+        <dt>Candidates</dt><dd>Qwen2.5 Coder 7B if you pulled it, and Qwen3 4B</dd>
+      </dl>
+      <ol class="steps">
+        <li>Run three code cases. On a 0.0, read the test output.</li>
+        <li>Run the SQL case. Does the reference use <code>ORDER BY</code>?</li>
+        <li>Run the reasoning case with numeric tolerance.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Watch for</h3>
+      <ul class="list small">
+        <li>The type of failure points to the fix: syntax error, failed assertion, or timeout.</li>
+        <li>Would you have passed the code by reading it? If not, are the tests too strict or incomplete?</li>
+      </ul>
+      <div class="spacer"></div>
+      <p class="discuss">What would a test suite look like for a data extraction task?</p>
+    </div>
+  </div>
+  <aside class="notes"><p>Good moment to compare a coder model with a general small model on the same cases. Qwen3's think block is stripped before the code runs. If its answer is cut off, raise Max tokens.</p>
+  <p><b>Expect <code>code-101</code> to fail for every local model.</b> Say it in the room so nobody thinks their setup is broken. Qwen2.5 Coder 7B skips the "ignore lines without <code>=</code>" rule (<code>ValueError: not enough values to unpack</code>), Llama 3.2 3B drops a value that contains <code>=</code> (<code>KeyError: 'TOKEN'</code>). Use it for "would you have passed this by reading it?". For passes, point people at <code>code-102</code>, <code>code-103</code> and <code>code-105</code> with the coder model.</p>
+  <p>A <code>NameError</code> saying <code>merge_env_files</code> is not defined means Qwen3 4B used its whole token budget thinking and returned no code.</p>
+  <p><b><code>sql-101</code> also fails for every local model.</b> The answer needs one row per category (2 rows). Qwen2.5 Coder 7B adds <code>LIMIT 1</code> and returns only the top row overall (<code>rows_candidate=1 rows_reference=2</code>); Llama 3.2 3B groups by category only and mixes the models' averages. Good prompt for "the detail string tells you what kind of mistake it was". "No SQL query found in the response" means Qwen3 ran out of tokens.</p></aside>
+</section>
+
+<!-- 17 · Concept: judge dimensions -->
+<section class="slide" data-title="Five dimensions">
+  <div class="head"><span class="eyebrow">Concept · Lab 05</span><h2>A judge scores five dimensions, 0–10 each</h2></div>
+  <div class="dims">
+    <div class="dim"><b>Correctness</b><span>Is the answer actually right?</span></div>
+    <div class="dim"><b>Completeness</b><span>Does it cover every part of the question?</span></div>
+    <div class="dim"><b>Robustness</b><span>Edge cases, ambiguity, unusual input</span></div>
+    <div class="dim"><b>Clarity</b><span>Easy to read and follow?</span></div>
+    <div class="dim"><b>Efficiency</b><span>Concise, economical approach?</span></div>
+  </div>
+  <div class="cols">
+    <ul class="list small">
+      <li>Combined into one weighted score in [0, 1]. Weights differ by category: code leans on correctness and robustness.</li>
+      <li>With a reference answer the judge has an anchor and scores more consistently.</li>
+    </ul>
+    <ul class="list small">
+      <li>Use a different model as judge than as candidate.</li>
+      <li>Avoid reasoning models as judges. They can spend the whole budget thinking and return no score.</li>
+    </ul>
+  </div>
+  <aside class="notes"><p><b>~3 min.</b> The judge is itself a language model: inconsistent, swayed by style, sometimes wrong. That is the bridge to Lab 06.</p></aside>
+</section>
+
+<!-- 18 · Lab 05 -->
+<section class="slide" data-title="Lab 05 · LLM as judge" data-minutes="20">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">05</span><div class="head"><span class="eyebrow">Lab · Playground</span><h2>Let a model grade the answer</h2></div></div><span class="min-badge">20 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Prompt</dt><dd><code>writing</code> · <code>write-001</code>, or <code>instruction_following</code></dd>
+        <dt>Mechanism</dt><dd><span class="mech">LLM judge</span></dd>
+        <dt>Judge</dt><dd>Llama 3.2 3B, then a second judge to compare</dd>
+      </dl>
+      <ol class="steps">
+        <li>Evaluate. Read the five dimensions and the justification.</li>
+        <li>Change only the candidate. Which dimensions moved?</li>
+        <li>Change only the judge. How far apart are the scores?</li>
+        <li>Use the same model as candidate and judge.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Watch for</h3>
+      <ul class="list small">
+        <li>Instruction following: completeness often drops before correctness.</li>
+        <li>Self-judging is flagged at the start of the justification: "self-evaluation: judge equals candidate".</li>
+        <li>Rate the answer yourself first, then compare with the judge.</li>
+      </ul>
+      <div class="spacer"></div>
+      <p class="discuss">How would you check that a judge grades correctly for your task?</p>
+    </div>
+  </div>
+  <aside class="notes"><p>There is no on-screen warning banner for self-judging, only that prefix in the detail text. Point people at it.</p>
+  <p>Optional demo: pick Qwen3 4B as judge with default max tokens and show the empty score.</p></aside>
+</section>
+
+<!-- 19 · Concept: judge the judge -->
+<section class="slide" data-title="Who judges the judge?">
+  <div class="head"><span class="eyebrow">Concept · Lab 06</span><h2>Who judges the judge?</h2></div>
+  <div class="cols">
+    <div class="stack">
+      <p class="small">Score the same answers with the judge under test and with a stronger reference judge, then measure agreement.</p>
+      <table class="cmp">
+        <tbody>
+          <tr><td><b>Pearson r</b></td><td>Linear agreement on scores</td></tr>
+          <tr><td><b>Spearman ρ</b></td><td>Agreement on ranking only</td></tr>
+          <tr><td><b>Rank agreement</b></td><td>Share of pairs ordered the same way</td></tr>
+          <tr><td><b>MAE</b></td><td>Average gap, in points out of 10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stack">
+      <h3>Verdict</h3>
+      <div class="stack" style="gap:0.8cqi">
+        <span><span class="chip chip--pass">reliable</span> <span class="small">r ≥ 0.7 and MAE ≤ 1.5</span></span>
+        <span><span class="chip chip--mid">questionable</span> <span class="small">r ≥ 0.4</span></span>
+        <span><span class="chip chip--fail">unreliable</span> <span class="small">otherwise</span></span>
+      </div>
+      <h3>Known biases</h3>
+      <ul class="list small">
+        <li><b>Self-preference</b>: a model rates answers in its own style higher.</li>
+        <li><b>Position</b>: in A/B comparisons, the judge favours one slot regardless of content.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes"><p><b>~3 min.</b> The chain ends with humans: to validate the reference judge you need human labels. This view automates the step below that.</p>
+  <p>The lab text calls the middle verdict "uncertain"; the app shows "questionable".</p></aside>
+</section>
+
+<!-- 20 · Lab 06 -->
+<section class="slide" data-title="Lab 06 · Judge reliability" data-minutes="25">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">06</span><div class="head"><span class="eyebrow">Lab · Judge reliability, Compare, Ensemble</span><h2>Measure the judge</h2></div></div><span class="min-badge">25 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <dl class="recipe">
+        <dt>Dataset</dt><dd><code>writing</code> (all 8 cases are used)</dd>
+        <dt>Candidate</dt><dd>Qwen3 4B</dd>
+        <dt>Judge under test</dt><dd>Llama 3.2 3B</dd>
+        <dt>Reference judge</dt><dd>Your strongest model: a cloud model with a key, else the largest local one</dd>
+      </dl>
+      <ol class="steps">
+        <li><b>Measure agreement</b>. Wait through "Generating answers…" and "Comparing judges…".</li>
+        <li>Read the verdict, the four metrics and the error per dimension.</li>
+        <li>Repeat with the same model as candidate and judge.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>Then</h3>
+      <ul class="list small">
+        <li><b>Compare</b>: two candidates, tick "Swap positions to check for bias". Does the winner hold?</li>
+        <li><b>Ensemble</b>: one answer, several judges. Read the average and the spread.</li>
+      </ul>
+      <div class="spacer"></div>
+      <p class="discuss">With 8 cases, how much weight can a Pearson r carry?</p>
+    </div>
+  </div>
+  <aside class="notes"><p>This is the slowest lab: three model passes over 8 cases. Start the agreement run first, then explain Compare and Ensemble while it runs.</p>
+  <p>Without cloud keys, use Qwen2.5 Coder 7B as the reference. Remind people that "reliable" then means "agrees with a slightly bigger model", not ground truth.</p></aside>
+</section>
+
+<!-- 21 · Lab 07 -->
+<section class="slide" data-title="Lab 07 · The full matrix" data-minutes="20">
+  <div class="lab-top"><div class="lab-title"><span class="lab-num">07</span><div class="head"><span class="eyebrow">Lab · Matrix</span><h2>Small vs large, naive vs refined</h2></div></div><span class="min-badge">20 min</span></div>
+  <div class="cols">
+    <div class="stack">
+      <table class="cmp">
+        <thead><tr><th></th><th>naive prompt</th><th>refined prompt</th></tr></thead>
+        <tbody>
+          <tr><td><b>small model</b></td><td><code>small-naive</code></td><td><code>small-refined</code></td></tr>
+          <tr><td><b>large model</b></td><td><code>large-naive</code></td><td><code>large-refined</code></td></tr>
+        </tbody>
+      </table>
+      <ol class="steps">
+        <li>8–10 <code>sentiment_classification</code> cases.</li>
+        <li><span class="mech">Exact match</span> and <span class="mech">LLM judge</span>.</li>
+        <li>Run three columns, then add <code>large-refined</code>.</li>
+        <li>Read the <b>Gate</b> row: PASS or BLOCKED per column.</li>
+      </ol>
+    </div>
+    <div class="stack">
+      <h3>The question</h3>
+      <p>Does <code>small-refined</code> get close to <code>large-naive</code>? If it does at fewer tokens in the <b>Tokens</b> row, it is the one to ship.</p>
+      <ul class="list small">
+        <li>Passes exact match, 0.5–0.7 from the judge: correct but thin.</li>
+        <li>An <code>error</code> chip: open that cell's case in the Playground.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes"><p>The refined columns use the Lab 02 refined template as override, with <code>{prompt}</code> at the end, so the whole 2×2 runs across all the ticked cases at once.</p>
+  <p>Local options: small = Llama 3.2 3B or Qwen3 4B, large = Qwen2.5 Coder 7B.</p></aside>
+</section>
+
+<!-- 22 · CI gate -->
+<section class="slide slide--dense" data-title="Evals as a CI gate">
+  <div class="head"><span class="eyebrow">From workshop to production</span><h2>Make the matrix a release gate</h2></div>
+  <div class="cols">
+    <div class="stack">
+      <ol class="steps">
+        <li>Keep a fixed evaluation set: the same cases every run.</li>
+        <li>Set a threshold per mechanism: exact match ≥ 0.90, judge ≥ 0.75.</li>
+        <li>Run the matrix on every model, prompt or temperature change.</li>
+        <li>Block the release when any score falls below its threshold.</li>
+      </ol>
+      <p class="small muted">The dataset and thresholds are the specification. If you can't write them down, you can't automate the gate.</p>
+      <p class="small"><b>In the app:</b> the Matrix's <b>Gate</b> row runs this same check on every column.</p>
+    </div>
+<pre>RUN=$(curl -s -X POST $API/runs -d '{
+  "case_ids": ["sent-01","sent-02","sent-03",
+               "sent-08","sent-13"],
+  "candidates": [{"model_id": "llama3-2-3b"}],
+  "methods": ["exact_match"] }' | jq -r .id)
+
+# poll GET $API/runs/$RUN until "completed"
+# accuracy = mean(exact_match values)
+
+exact match accuracy: 0.80 over 5 cases
+exit code: 1        # gate fails, release blocked</pre>
+  </div>
+  <aside class="notes"><p><b>~5 min.</b> That output is real: Llama 3.2 3B scored 0.80 on these five cases when this was tested, so the gate fails. If there's time, run it live. The full working script is in the Lab Companion page (it uses Python instead of jq and sets the content-type header).</p>
+  <p>Or show it in the app: run the Matrix with these five cases and Llama 3.2 3B, and the Gate row reads BLOCKED, exact_match 0.80 &lt; 0.90, the same answer as the script. Lower the threshold live to show the verdict flip.</p></aside>
+</section>
+
+<!-- 23 · Takeaways -->
+<section class="slide" data-title="Takeaways">
+  <div class="head"><span class="eyebrow">Wrap-up</span><h2>What to take home</h2></div>
+  <div class="cols-4">
+    <div class="panel panel--p1"><h3>Criteria first</h3><p class="small">Decide what "better" means as a number before touching the prompt.</p></div>
+    <div class="panel panel--p2"><h3>Fit the mechanism</h3><p class="small">Use the cheapest mechanism that fits the task: labels get exact match, code gets tests.</p></div>
+    <div class="panel panel--p3"><h3>Check your judges</h3><p class="small">An LLM judge is a model too. Measure its agreement before trusting it.</p></div>
+    <div class="panel panel--p4"><h3>Gate on it</h3><p class="small">The eval set is a spec. Run it on every change and block regressions.</p></div>
+  </div>
+  <p class="discuss">What is the biggest obstacle to running an eval gate in your current project?</p>
+  <aside class="notes"><p><b>~5 min.</b> Close on the discussion question and collect answers. They make good Q&amp;A starters.</p></aside>
+</section>
+
+<!-- 24 · Thanks -->
+<section class="slide slide--end" data-title="Questions">
+  <h1>Questions?</h1>
+  <p class="end__sub">They will not be "evaluated" 😄</p>
+  <div class="end__links">
+    <span>Repository · <code>github.com/TheTechOddBug/openslava26-workshop-evaluations</code></span>
+    <span>Lab guides · <code>docs/00-introduction.md … 07-the-full-matrix.md</code></span>
+  </div>
+  <aside class="notes"><p>Leave this up during Q&amp;A.</p></aside>
+</section>
+
+</div>
+</div>
+
+<div class="notes-panel" id="notes-panel" hidden>
+  <div class="notes-panel__inner">
+    <span class="notes-panel__label" id="notes-label">Speaker notes</span>
+    <div id="notes-body"></div>
+  </div>
+</div>
+
+<div class="bar" role="toolbar" aria-label="Presentation controls">
+  <span class="progress" id="progress"></span>
+  <button class="btn" type="button" id="prev" aria-label="Previous slide">←</button>
+  <span class="bar__count" id="count">1 / 24</span>
+  <button class="btn" type="button" id="next" aria-label="Next slide">→</button>
+  <span class="bar__title" id="bar-title"></span>
+  <span class="timer" id="timer" hidden>
+    <span class="timer__face" id="timer-face">15:00</span>
+    <button class="btn" type="button" id="timer-toggle">Start</button>
+    <button class="btn" type="button" id="timer-reset">Reset</button>
+  </span>
+  <button class="btn" type="button" id="notes-btn" aria-pressed="false">Notes<kbd>N</kbd></button>
+  <button class="btn" type="button" id="full-btn">Full screen<kbd>F</kbd></button>
+  <button class="btn" type="button" id="help-btn" aria-label="Keyboard shortcuts">?</button>
+</div>
+
+<div class="help" id="help" hidden>
+  <div class="help__card" role="dialog" aria-label="Keyboard shortcuts">
+    <h3>Keyboard</h3>
+    <dl>
+      <dt>→ Space</dt><dd>Next slide</dd>
+      <dt>←</dt><dd>Previous slide</dd>
+      <dt>Home End</dt><dd>First or last slide</dd>
+      <dt>N</dt><dd>Show or hide speaker notes</dd>
+      <dt>F</dt><dd>Full screen</dd>
+      <dt>T</dt><dd>Start or pause the lab timer</dd>
+    </dl>
+    <button class="btn" type="button" id="help-close">Close</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll(".slide")];
+  const LOGO = "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQ2LjI2IDMxMi40MyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgaWQ9IkxheWVyXzIiIG92ZXJmbG93PSJoaWRkZW4iPjxnIGlkPSJMYXllcl8xLTIiPjxwYXRoIGQ9Ik02NS40NSAxMzIuOUM1NS41NyAxMzIuOSA0Ni41OCAxMzEuMjQgMzguNTEgMTI3LjkzIDMwLjQzIDEyNC42MiAyMy41NiAxMjAuMDEgMTcuOSAxMTQuMSAxMi4yMyAxMDguMiA3LjgzIDEwMS4yMyA0LjcgOTMuMjIgMS41NiA4NS4yIDYuMjE3MjVlLTE1IDc2LjU2IDYuMjE3MjVlLTE1IDY3LjI3TDYuMjE3MjVlLTE1IDY1LjgyQzYuMjE3MjVlLTE1IDU2LjQyIDEuNiA0Ny42OCA0Ljc5IDM5LjYxIDcuOTggMzEuNTMgMTIuNDcgMjQuNTcgMTguMjYgMTguNzIgMjQuMDUgMTIuODcgMzAuOTUgOC4yOSAzOC45NiA0Ljk4IDQ2Ljk4IDEuNjYgNTUuODEgMCA2NS40NSAwIDc1LjA5IDAgODMuODkgMS42MyA5MS44NSA0Ljg4IDk5LjgxIDguMTQgMTA2LjY0IDEyLjY1IDExMi4zNyAxOC40NCAxMTguMDkgMjQuMjMgMTIyLjU2IDMxLjEgMTI1Ljc1IDM5LjA1IDEyOC45NCA0Ny4wMSAxMzAuNTQgNTUuNzUgMTMwLjU0IDY1LjI3TDEzMC41NCA2Ni43MkMxMzAuNTQgNzYuMTIgMTI5IDg0Ljg2IDEyNS45MyA5Mi45NCAxMjIuODYgMTAxLjAyIDExOC40NSAxMDguMDEgMTEyLjczIDExMy45MSAxMDcgMTE5LjgyIDEwMC4xMyAxMjQuNDYgOTIuMTIgMTI3LjgzIDg0LjEgMTMxLjIgNzUuMjEgMTMyLjg5IDY1LjQ1IDEzMi44OVpNNjYuMTYgMTEzLjQzQzcyLjI5IDExMy40MyA3Ny43OSAxMTIuMzIgODIuNjYgMTEwLjA5IDg3LjUzIDEwNy44NiA5MS42OCAxMDQuNyA5NS4xMSAxMDAuNiA5OC41NCA5Ni41MSAxMDEuMTggOTEuNiAxMDMuMDUgODUuODcgMTA0LjkxIDgwLjE1IDEwNS44NSA3My43OSAxMDUuODUgNjYuOEwxMDUuODUgNjUuMzZDMTA1Ljg1IDU4LjczIDEwNC45NSA1Mi41OSAxMDMuMTUgNDYuOTMgMTAxLjM1IDQxLjI3IDk4LjczIDM2LjM5IDk1LjMgMzIuMjkgOTEuODcgMjguMiA4Ny42NiAyNC45NyA4Mi42NyAyMi42MiA3Ny42OCAyMC4yNyA3Mi4wNiAxOS4xIDY1LjggMTkuMSA1OS41NCAxOS4xIDUzLjc4IDIwLjIxIDQ4Ljg0IDIyLjQ1IDQzLjkxIDI0LjY4IDM5LjcgMjcuODQgMzYuMjEgMzEuOTQgMzIuNzIgMzYuMDQgMzAuMDggNDAuOTEgMjguMjcgNDYuNTggMjYuNDcgNTIuMjQgMjUuNTcgNTguNTcgMjUuNTcgNjUuNTZMMjUuNTcgNjdDMjUuNTcgNzQuMTEgMjYuNTkgODAuNSAyOC42NCA4Ni4xNiAzMC42OCA5MS44MiAzMy41MSA5Ni43IDM3LjEyIDEwMC44IDQwLjczIDEwNC45IDQ1IDEwOC4wMyA0OS45MyAxMTAuMiA1NC44NiAxMTIuMzcgNjAuMjcgMTEzLjQ1IDY2LjE2IDExMy40NVoiLz48cGF0aCBkPSJNMTQwLjI1IDM2LjI3IDE2Mi4zIDM2LjI3IDE2Mi4zIDUxLjQ4QzE2My42MyA0OS4xOSAxNjUuMzMgNDcuMDIgMTY3LjM5IDQ0Ljk2IDE2OS40NSA0Mi45MSAxNzEuODQgNDEuMSAxNzQuNTcgMzkuNTMgMTc3LjI5IDM3Ljk2IDE4MC4yMyAzNi42OSAxODMuMzggMzUuNzMgMTg2LjUzIDM0Ljc3IDE4OS44NiAzNC4yOCAxOTMuMzcgMzQuMjggMTk5LjMgMzQuMjggMjA0Ljg0IDM1LjM3IDIwOS45OSAzNy41NCAyMTUuMTQgMzkuNzEgMjE5LjU5IDQyLjg1IDIyMy4zNCA0Ni45NSAyMjcuMDkgNTEuMDYgMjMwLjA2IDU2LjEgMjMyLjI0IDYyLjA3IDIzNC40MiA2OC4wNCAyMzUuNTEgNzQuODQgMjM1LjUxIDgyLjQ0TDIzNS41MSA4My44OUMyMzUuNTEgOTEuNDkgMjM0LjQ1IDk4LjMxIDIzMi4zMyAxMDQuMzUgMjMwLjIxIDExMC4zOSAyMjcuMyAxMTUuNTIgMjIzLjYxIDExOS43NCAyMTkuOTEgMTIzLjk3IDIxNS40OSAxMjcuMTkgMjEwLjM1IDEyOS40MyAyMDUuMiAxMzEuNjYgMTk5LjU0IDEzMi43OCAxOTMuMzYgMTMyLjc4IDE4NS43MyAxMzIuNzggMTc5LjI4IDEzMS4xNSAxNzQuMDEgMTI3Ljg5IDE2OC43NCAxMjQuNjMgMTY0LjgzIDEyMC43MSAxNjIuMjkgMTE2LjEyTDE2Mi4yOSAxNjMuMjggMTQwLjI0IDE2My4yOCAxNDAuMjQgMzYuMjdaTTE4Ny42MyAxMTUuNzRDMTk1LjcgMTE1Ljc0IDIwMS44OCAxMTMuMTEgMjA2LjE2IDEwNy44NSAyMTAuNDQgMTAyLjU5IDIxMi41OCA5NC44MyAyMTIuNTggODQuNTVMMjEyLjU4IDgzLjFDMjEyLjU4IDc3LjkxIDIxMS45NSA3My4zNCAyMTAuNjggNjkuNDEgMjA5LjQxIDY1LjQ4IDIwNy42NCA2Mi4xOSAyMDUuMzUgNTkuNTMgMjAzLjA2IDU2Ljg3IDIwMC40MSA1NC45MSAxOTcuNCA1My42NCAxOTQuMzkgNTIuMzcgMTkxLjA3IDUxLjc0IDE4Ny40NiA1MS43NCAxNzkuODcgNTEuNzQgMTczLjYzIDU0LjMxIDE2OC43NSA1OS40NSAxNjMuODcgNjQuNTggMTYxLjQzIDcyLjQ3IDE2MS40MyA4My4xTDE2MS40MyA4NC41NUMxNjEuNDMgOTUuMTkgMTYzLjgxIDEwMy4wNCAxNjguNTcgMTA4LjEyIDE3My4zMyAxMTMuMiAxNzkuNjkgMTE1LjczIDE4Ny42NCAxMTUuNzNaIi8+PHBhdGggZD0iTTI5Mi4yOCAxMzEuNzFDMjg1LjI4IDEzMS43MSAyNzguODYgMTMwLjYyIDI3My4wMSAxMjguNDUgMjY3LjE2IDEyNi4yNyAyNjIuMDkgMTIzLjE1IDI1Ny44MSAxMTkuMSAyNTMuNTMgMTE1LjA0IDI1MC4yMSAxMTAuMTMgMjQ3Ljg2IDEwNC4zNyAyNDUuNTEgOTguNjEgMjQ0LjMzIDkyLjA4IDI0NC4zMyA4NC43OUwyNDQuMzMgODMuMzhDMjQ0LjMzIDc2LjIxIDI0NS41MSA2OS43MSAyNDcuODYgNjMuODggMjUwLjIxIDU4LjA2IDI1My41IDUzLjA2IDI1Ny43MiA0OC44OCAyNjEuOTQgNDQuNzEgMjY2LjkyIDQxLjQ3IDI3Mi42NSAzOS4xOCAyNzguMzggMzYuODkgMjg0LjYyIDM1Ljc0IDI5MS4zOCAzNS43NCAyOTcuMjkgMzUuNzQgMzAyLjkzIDM2LjYyIDMwOC4zIDM4LjM4IDMxMy42NyA0MC4xNCAzMTguNCA0Mi44OSAzMjIuNSA0Ni42NCAzMjYuNiA1MC4zOSAzMjkuODkgNTUuMiAzMzIuMzYgNjEuMDYgMzM0LjgzIDY2LjkyIDMzNi4wNyA3My45NiAzMzYuMDcgODIuMTZMMzM2LjA3IDg4LjMyIDI2Ni43NyA4OC4zMkMyNjcuMTMgOTcuMiAyNjkuNTEgMTA0IDI3My45MiAxMDguNzQgMjc4LjMyIDExMy40OCAyODQuNjIgMTE1Ljg0IDI5Mi44MyAxMTUuODQgMjk5LjQ2IDExNS44NCAzMDQuNTMgMTE0LjU5IDMwOC4wMyAxMTIuMDkgMzExLjUzIDEwOS41OSAzMTMuNyAxMDYuMDcgMzE0LjU0IDEwMS41NUwzMzUuNzEgMTAxLjU1QzMzNC4xNCAxMTEuMzcgMzI5LjU2IDExOC44NSAzMjEuOTYgMTI0IDMxNC4zNiAxMjkuMTUgMzA0LjQ3IDEzMS43MiAyOTIuMjkgMTMxLjcyWk0zMTQuNTggNzQuMkMzMTMuOTggNjUuOTkgMzExLjcxIDYwLjAyIDMwNy43OSA1Ni4yOCAzMDMuODYgNTIuNTQgMjk4LjQ2IDUwLjY3IDI5MS41OCA1MC42NyAyODQuNyA1MC42NyAyNzkuNTEgNTIuNzUgMjc1LjI4IDU2LjkyIDI3MS4wNiA2MS4wOSAyNjguNCA2Ni44NSAyNjcuMzEgNzQuMjFMMzE0LjU3IDc0LjIxWiIvPjxwYXRoIGQ9Ik0zNDcuNTMgMzYuMjcgMzY5LjU4IDM2LjI3IDM2OS41OCA1MS4yNUMzNzEuODYgNDYuNjggMzc1LjU1IDQyLjcxIDM4MC42NSAzOS4zNCAzODUuNzUgMzUuOTcgMzkyLjIgMzQuMjkgNDAwIDM0LjI5IDQwNC42OCAzNC4yOSA0MDkgMzUuMDEgNDEyLjk2IDM2LjQ2IDQxNi45MiAzNy45MSA0MjAuMzQgNDAuMSA0MjMuMjIgNDMuMDQgNDI2LjEgNDUuOTkgNDI4LjMyIDQ5LjgxIDQyOS44OCA1NC41IDQzMS40NCA1OS4xOSA0MzIuMjIgNjQuNzkgNDMyLjIyIDcxLjI4TDQzMi4yMiAxMzAuNjUgNDExLjA1IDEzMC42NSA0MTEuMDUgNzIuOTRDNDExLjA1IDY1LjY4IDQwOS41MyA2MC4zOSA0MDYuNDggNTcuMDYgNDAzLjQ0IDUzLjczIDM5OC42MyA1Mi4wNyAzOTIuMDUgNTIuMDcgMzg1Ljg0IDUyLjA3IDM4MC41NCA1My45OCAzNzYuMTYgNTcuNzkgMzcxLjc4IDYxLjYgMzY5LjU5IDY3LjI2IDM2OS41OSA3NC43NkwzNjkuNTkgMTMwLjY2IDM0Ny41NCAxMzAuNjYgMzQ3LjU0IDM2LjI3WiIvPjxwYXRoIGQ9Ik01MS4xNyAzMTEuNzJDNDIuNTQgMzExLjcyIDM1LjI1IDMxMC42MSAyOS4zMiAzMDguMzkgMjMuMzggMzA2LjE3IDE4LjUgMzAzLjIxIDE0LjY2IDI5OS40OSAxMC44MiAyOTUuNzggNy45MSAyOTEuNDYgNS45NCAyODYuNTQgMy45NiAyODEuNjMgMi42NyAyNzYuNDEgMi4wNyAyNzAuODlMMTcuMTggMjcwLjg5QzE3LjY2IDI3NC43MyAxOC41IDI3OC4zNSAxOS43IDI4MS43NyAyMC45IDI4NS4xOSAyMi43NiAyODguMTkgMjUuMjcgMjkwLjc2IDI3Ljc5IDI5My4zNCAzMS4xMiAyOTUuMzggMzUuMjUgMjk2Ljg4IDM5LjM5IDI5OC4zOCA0NC42OSAyOTkuMTMgNTEuMTcgMjk5LjEzIDU1LjI0IDI5OS4xMyA1OS4wOCAyOTguNTYgNjIuNjggMjk3LjQyIDY2LjI4IDI5Ni4yOCA2OS4zOSAyOTQuNjMgNzIuMDMgMjkyLjQ4IDc0LjY3IDI5MC4zMiA3Ni43MyAyODcuNzQgNzguMjMgMjg0Ljc0IDc5LjczIDI4MS43NSA4MC40OCAyNzguNDUgODAuNDggMjc0Ljg1IDgwLjQ4IDI3MS4yNSA4MCAyNjguMTEgNzkuMDQgMjY1LjQxIDc4LjA4IDI2Mi43MSA3Ni40MyAyNjAuNDEgNzQuMDkgMjU4LjQ4IDcxLjc1IDI1Ni41NiA2OC41NyAyNTQuOTUgNjQuNTYgMjUzLjYyIDYwLjU0IDI1Mi4zIDU1LjQ4IDI1MS4xNiA0OS4zNiAyNTAuMiA0Mi42NCAyNDkuMTIgMzYuNjIgMjQ3Ljc0IDMxLjI5IDI0Ni4wNiAyNS45NSAyNDQuMzggMjEuNDMgMjQyLjE5IDE3LjcxIDIzOS40OSAxMy45OSAyMzYuOCAxMS4xNyAyMzMuNDQgOS4yNiAyMjkuNDIgNy4zNCAyMjUuNCA2LjM4IDIyMC41MiA2LjM4IDIxNC43NyA2LjM4IDIwOS44NSA3LjQgMjA1LjI3IDkuNDQgMjAxLjAxIDExLjQ4IDE5Ni43NSAxNC4zMiAxOTMuMDcgMTcuOTggMTg5Ljk1IDIxLjY0IDE4Ni44MyAyNS45OCAxODQuMzggMzEuMDIgMTgyLjU4IDM2LjA2IDE4MC43OCA0MS42MyAxNzkuODggNDcuNzUgMTc5Ljg4IDYwLjcgMTc5Ljg4IDcwLjk4IDE4Mi45MSA3OC41OSAxODguOTYgODYuMiAxOTUuMDIgOTAuNjcgMjAzLjggOTEuOTkgMjE1LjMxTDc3Ljk2IDIxNS4zMUM3Ni40IDIwNy4xNiA3My4yMiAyMDEuMzEgNjguNDMgMTk3Ljc3IDYzLjYzIDE5NC4yNCA1Ni43NCAxOTIuNDcgNDcuNzUgMTkyLjQ3IDM4Ljc2IDE5Mi40NyAzMi4xOSAxOTQuNDIgMjcuNyAxOTguMzEgMjMuMjEgMjAyLjIxIDIwLjk2IDIwNy4yMSAyMC45NiAyMTMuMzMgMjAuOTYgMjE2LjQ1IDIxLjM1IDIxOS4yMyAyMi4xMyAyMjEuNjkgMjIuOTEgMjI0LjE1IDI0LjQxIDIyNi4yOCAyNi42MyAyMjguMDcgMjguODUgMjI5Ljg3IDMxLjk2IDIzMS40NiAzNS45OCAyMzIuODQgNDAgMjM0LjIyIDQ1LjMgMjM1LjM5IDUxLjkgMjM2LjM1IDU5LjA5IDIzNy40MyA2NS4zOSAyMzguODcgNzAuNzggMjQwLjY3IDc2LjE4IDI0Mi40NyA4MC43MyAyNDQuODEgODQuNDUgMjQ3LjY5IDg4LjE2IDI1MC41NyA5MC45NSAyNTQuMTEgOTIuODEgMjU4LjMgOTQuNjcgMjYyLjUgOTUuNiAyNjcuNjUgOTUuNiAyNzMuNzYgOTUuNiAyNzkuMTYgOTQuNDkgMjg0LjE2IDkyLjI3IDI4OC43OCA5MC4wNSAyOTMuNCA4Ni45NiAyOTcuNDEgODMuMDEgMzAwLjgzIDc5LjA1IDMwNC4yNSA3NC4zNSAzMDYuOTIgNjguODkgMzA4LjgzIDYzLjQzIDMxMC43NSA1Ny41MyAzMTEuNzEgNTEuMTggMzExLjcxWiIvPjxwYXRoIGQ9Ik0xMTIuMDIgMTcwLjM0IDEyNy4wMSAxNzAuMzQgMTI3LjAxIDMxMC41OSAxMTIuMDIgMzEwLjU5IDExMi4wMiAxNzAuMzRaIi8+PHBhdGggZD0iTTE3Ni45NSAzMTIuMjJDMTcyLjYxIDMxMi4yMiAxNjguNTIgMzExLjY4IDE2NC42NyAzMTAuNTkgMTYwLjgxIDMwOS41IDE1Ny40NyAzMDcuODIgMTU0LjY0IDMwNS41MiAxNTEuODEgMzAzLjIzIDE0OS41OCAzMDAuMzMgMTQ3Ljk2IDI5Ni44MyAxNDYuMzMgMjkzLjMzIDE0NS41MiAyODkuMTcgMTQ1LjUyIDI4NC4zNCAxNDUuNTIgMjc4LjkxIDE0Ni44NCAyNzQuMzMgMTQ5LjQ5IDI3MC41OCAxNTIuMTQgMjY2Ljg0IDE1NS42NiAyNjMuODMgMTYwLjA2IDI2MS41MyAxNjQuNDYgMjU5LjI0IDE2OS41MSAyNTcuNTggMTc1LjI0IDI1Ni41NSAxODAuOTYgMjU1LjUzIDE4Ni44MyAyNTUuMDEgMTkyLjg1IDI1NS4wMUwyMDYuNCAyNTUuMDEgMjA2LjQgMjQ4LjAzQzIwNi40IDI0MC4zMSAyMDQuODMgMjM0Ljc3IDIwMS43IDIzMS40IDE5OC41NyAyMjguMDMgMTkzLjM5IDIyNi4zNSAxODYuMTYgMjI2LjM1IDE3My4xNSAyMjYuMzUgMTY1LjkzIDIzMi4wOCAxNjQuNDggMjQzLjU1TDE0OS40OSAyNDMuNTVDMTQ5Ljk3IDIzOCAxNTEuMzMgMjMzLjMyIDE1My41NSAyMjkuNSAxNTUuNzggMjI1LjY4IDE1OC42MSAyMjIuNTYgMTYyLjA0IDIyMC4xNiAxNjUuNDcgMjE3Ljc2IDE2OS4zMiAyMTYuMDMgMTczLjYgMjE0Ljk4IDE3Ny44NyAyMTMuOTMgMTgyLjMgMjEzLjQxIDE4Ni44OCAyMTMuNDEgMTkxLjQ2IDIxMy40MSAxOTUuNjcgMjEzLjk0IDE5OS44OSAyMTQuOTggMjA0LjEgMjE2LjAzIDIwNy43OCAyMTcuODggMjEwLjkxIDIyMC41MyAyMTQuMDQgMjIzLjE4IDIxNi41NyAyMjYuNzMgMjE4LjUgMjMxLjE2IDIyMC40MyAyMzUuNiAyMjEuMzkgMjQxLjIxIDIyMS4zOSAyNDcuOTlMMjIxLjM5IDMxMC41OSAyMDYuNCAzMTAuNTkgMjA2LjQgMjk4LjY0QzIwMi45MSAzMDMuMTEgMTk4Ljg3IDMwNi40OCAxOTQuMyAzMDguNzggMTg5LjcyIDMxMS4wNyAxODMuOTQgMzEyLjIyIDE3Ni45NiAzMTIuMjJaTTE3OC4zNCAzMDAuMTlDMTgyLjMyIDMwMC4xOSAxODYuMDQgMjk5LjY4IDE4OS40NyAyOTguNjUgMTkyLjkxIDI5Ny42MyAxOTUuODcgMjk2LjE0IDE5OC4zNCAyOTQuMjEgMjAwLjgxIDI5Mi4yOCAyMDIuNzggMjg5Ljg5IDIwNC4yMyAyODcuMDYgMjA1LjY4IDI4NC4yMiAyMDYuNCAyODAuOTkgMjA2LjQgMjc3LjM3TDIwNi40IDI2NS42IDE5My4zNiAyNjUuNkMxODguNjUgMjY1LjYgMTg0LjI4IDI2NS45MyAxODAuMjMgMjY2LjYgMTc2LjE4IDI2Ny4yNyAxNzIuNjggMjY4LjMyIDE2OS43MyAyNjkuNzcgMTY2Ljc3IDI3MS4yMiAxNjQuNDggMjczLjEyIDE2Mi44NSAyNzUuNDcgMTYxLjIyIDI3Ny44MiAxNjAuNDEgMjgwLjc1IDE2MC40MSAyODQuMjUgMTYwLjQxIDI4OS4yIDE2MS43NCAyOTMuMSAxNjQuMzkgMjk1LjkzIDE2Ny4wNCAyOTguNzcgMTcxLjY5IDMwMC4xOSAxNzguMzMgMzAwLjE5WiIvPjxwYXRoIGQ9Ik0yMzIuMzEgMjE2LjIxIDI0OC41NSAyMTYuMjEgMjc2LjUyIDI5NS40MyAzMDQuMTMgMjE2LjIxIDMxOS42NSAyMTYuMjEgMjg1LjcyIDMxMC41OSAyNjYuNTkgMzEwLjU5IDIzMi4zIDIxNi4yMVoiLz48cGF0aCBkPSJNMzU2LjAxIDMxMi4yMkMzNTEuNjcgMzEyLjIyIDM0Ny41OCAzMTEuNjggMzQzLjczIDMxMC41OSAzMzkuODcgMzA5LjUgMzM2LjUzIDMwNy44MiAzMzMuNyAzMDUuNTIgMzMwLjg3IDMwMy4yMyAzMjguNjQgMzAwLjMzIDMyNy4wMiAyOTYuODMgMzI1LjM5IDI5My4zMyAzMjQuNTggMjg5LjE3IDMyNC41OCAyODQuMzQgMzI0LjU4IDI3OC45MSAzMjUuOSAyNzQuMzMgMzI4LjU1IDI3MC41OCAzMzEuMiAyNjYuODQgMzM0LjcyIDI2My44MyAzMzkuMTIgMjYxLjUzIDM0My41MiAyNTkuMjQgMzQ4LjU3IDI1Ny41OCAzNTQuMyAyNTYuNTUgMzYwLjAyIDI1NS41MyAzNjUuODkgMjU1LjAxIDM3MS45MSAyNTUuMDFMMzg1LjQ2IDI1NS4wMSAzODUuNDYgMjQ4LjAzQzM4NS40NiAyNDAuMzEgMzgzLjg5IDIzNC43NyAzODAuNzYgMjMxLjQgMzc3LjYzIDIyOC4wMyAzNzIuNDUgMjI2LjM1IDM2NS4yMiAyMjYuMzUgMzUyLjIxIDIyNi4zNSAzNDQuOTkgMjMyLjA4IDM0My41NCAyNDMuNTVMMzI4LjU1IDI0My41NUMzMjkuMDMgMjM4IDMzMC4zOSAyMzMuMzIgMzMyLjYxIDIyOS41IDMzNC44NCAyMjUuNjggMzM3LjY3IDIyMi41NiAzNDEuMSAyMjAuMTYgMzQ0LjUzIDIxNy43NiAzNDguMzggMjE2LjAzIDM1Mi42NiAyMTQuOTggMzU2LjkzIDIxMy45MyAzNjEuMzYgMjEzLjQxIDM2NS45NCAyMTMuNDEgMzcwLjUyIDIxMy40MSAzNzQuNzMgMjEzLjk0IDM3OC45NSAyMTQuOTggMzgzLjE2IDIxNi4wMyAzODYuODQgMjE3Ljg4IDM4OS45NyAyMjAuNTMgMzkzLjEgMjIzLjE4IDM5NS42MyAyMjYuNzMgMzk3LjU2IDIzMS4xNiAzOTkuNDkgMjM1LjYgNDAwLjQ1IDI0MS4yMSA0MDAuNDUgMjQ3Ljk5TDQwMC40NSAzMTAuNTkgMzg1LjQ2IDMxMC41OSAzODUuNDYgMjk4LjY0QzM4MS45NyAzMDMuMTEgMzc3LjkzIDMwNi40OCAzNzMuMzYgMzA4Ljc4IDM2OC43OCAzMTEuMDcgMzYzIDMxMi4yMiAzNTYuMDIgMzEyLjIyWk0zNTcuMzkgMzAwLjE5QzM2MS4zNyAzMDAuMTkgMzY1LjA5IDI5OS42OCAzNjguNTIgMjk4LjY1IDM3MS45NiAyOTcuNjMgMzc0LjkyIDI5Ni4xNCAzNzcuMzkgMjk0LjIxIDM3OS44NiAyOTIuMjggMzgxLjgzIDI4OS44OSAzODMuMjggMjg3LjA2IDM4NC43MyAyODQuMjIgMzg1LjQ1IDI4MC45OSAzODUuNDUgMjc3LjM3TDM4NS40NSAyNjUuNiAzNzIuNDEgMjY1LjZDMzY3LjcgMjY1LjYgMzYzLjMzIDI2NS45MyAzNTkuMjggMjY2LjYgMzU1LjIzIDI2Ny4yNyAzNTEuNzMgMjY4LjMyIDM0OC43OCAyNjkuNzcgMzQ1LjgyIDI3MS4yMiAzNDMuNTMgMjczLjEyIDM0MS45IDI3NS40NyAzNDAuMjcgMjc3LjgyIDMzOS40NiAyODAuNzUgMzM5LjQ2IDI4NC4yNSAzMzkuNDYgMjg5LjIgMzQwLjc5IDI5My4xIDM0My40NCAyOTUuOTMgMzQ2LjA5IDI5OC43NyAzNTAuNzQgMzAwLjE5IDM1Ny4zOCAzMDAuMTlaIi8+PHBhdGggZD0iTTQwOC45NyAyMTMuNDUgNDI0IDE2OS4yNyA0NDcuMzYgMTc3Ljc4IDQyMy44MiAyMTkuNjEgNDA4Ljk3IDIxMy40NVoiLz48cGF0aCBkPSJNNDQyLjc5IDMwNi4yNSA0OTEuNjIgMjU0Ljc4QzQ5Ny43NyAyNDguMjggNTAyLjU5IDI0Mi4wOSA1MDYuMDkgMjM2LjE5IDUwOS41OCAyMzAuMyA1MTEuMzMgMjI0LjI4IDUxMS4zMyAyMTguMTQgNTExLjMzIDIxMiA1MDkuNjcgMjA3LjE5IDUwNi4zNiAyMDMuNyA1MDMuMDQgMjAwLjIxIDQ5OC4yNSAxOTguNDcgNDkxLjk4IDE5OC40NyA0ODUuNzEgMTk4LjQ3IDQ4MC4yNSAyMDAuNDYgNDc2LjM0IDIwNC40NCA0NzIuNDIgMjA4LjQyIDQ2OS45MiAyMTQuOTkgNDY4Ljg0IDIyNC4xNUw0NDYuNjUgMjI0LjE1QzQ0Ny40OSAyMDkuODUgNDUxLjkzIDE5OC44MSA0NTkuOTYgMTkxLjA2IDQ2Ny45OSAxODMuMzEgNDc4Ljg5IDE3OS40MiA0OTIuNjUgMTc5LjQyIDQ5OS4yOSAxNzkuNDIgNTA1LjI2IDE4MC4zNSA1MTAuNTggMTgyLjIzIDUxNS44OSAxODQuMSA1MjAuMzkgMTg2LjcgNTI0LjA3IDE5MC4wMiA1MjcuNzUgMTkzLjM0IDUzMC41NiAxOTcuMzYgNTMyLjQ5IDIwMi4wOCA1MzQuNDIgMjA2Ljc5IDUzNS4zOSAyMTEuOTkgNTM1LjM5IDIxNy42NyA1MzUuMzkgMjI2LjEzIDUzMy4wOSAyMzQuMSA1MjguNTEgMjQxLjU5IDUyMy45MiAyNDkuMDggNTE3Ljc2IDI1Ni41NyA1MTAuMDQgMjY0LjA2TDQ4MS4yNCAyOTIuMDggNTM2LjMgMjkyLjA4IDUzNi4zIDMxMC42IDQ0Mi44IDMxMC42IDQ0Mi44IDMwNi4yNloiLz48cGF0aCBkPSJNNTk4LjQ1IDMxMi40M0M1ODkuMDQgMzEyLjQzIDU4MS4xIDMxMC44NiA1NzQuNjQgMzA3LjcyIDU2OC4xOCAzMDQuNTggNTYyLjk2IDMwMC4yOSA1NTguOTggMjk0Ljg2IDU1NSAyODkuNDMgNTUyLjEzIDI4My4wMyA1NTAuMzggMjc1LjY3IDU0OC42MyAyNjguMzEgNTQ3Ljc2IDI2MC4zNCA1NDcuNzYgMjUxLjc3TDU0Ny43NiAyNDguNjlDNTQ3Ljc2IDIzNy40NiA1NDkuMDkgMjI3LjUzIDU1MS43NCAyMTguOSA1NTQuMzkgMjEwLjI3IDU1OC4xIDIwMy4wMyA1NjIuODggMTk3LjE3IDU2Ny42NSAxOTEuMzIgNTczLjMyIDE4Ni44OCA1NzkuOSAxODMuODYgNTg2LjQ4IDE4MC44NCA1OTMuNjMgMTc5LjM0IDYwMS4zNiAxNzkuMzQgNjEzLjE5IDE3OS4zNCA2MjIuNzggMTgyLjIxIDYzMC4xNSAxODcuOTQgNjM3LjUxIDE5My42NyA2NDEuOTggMjAyLjIyIDY0My41NSAyMTMuNTZMNjIxLjEgMjEzLjU2QzYxOS44OSAyMDguNjEgNjE3Ljg0IDIwNC43OCA2MTQuOTQgMjAyLjA2IDYxMi4wNCAxOTkuMzUgNjA3LjQ1IDE5Ny45OSA2MDEuMTggMTk3Ljk5IDU5Mi40OSAxOTcuOTkgNTg1LjQ5IDIwMS43NiA1ODAuMTggMjA5LjMgNTc0Ljg3IDIxNi44NSA1NzIuMDMgMjI4LjA0IDU3MS42NyAyNDIuODkgNTc0LjY5IDIzNy44MiA1NzguODUgMjMzLjc4IDU4NC4xNiAyMzAuNzYgNTg5LjQ3IDIyNy43NCA1OTUuOTkgMjI2LjI0IDYwMy43MiAyMjYuMjQgNjA5Ljg4IDIyNi4yNCA2MTUuNTggMjI3LjI2IDYyMC44MyAyMjkuMzIgNjI2LjA4IDIzMS4zOCA2MzAuNTggMjM0LjI0IDYzNC4zMiAyMzcuOTIgNjM4LjA2IDI0MS42IDY0MC45OSAyNDYuMDQgNjQzLjEgMjUxLjIzIDY0NS4yMSAyNTYuNDIgNjQ2LjI3IDI2Mi4xNiA2NDYuMjcgMjY4LjQzIDY0Ni4yNyAyNzQuNyA2NDUuMTUgMjgwLjkyIDY0Mi45MiAyODYuMzUgNjQwLjY4IDI5MS43OCA2MzcuNDkgMjk2LjQzIDYzMy4zMiAzMDAuMjkgNjI5LjE1IDMwNC4xNSA2MjQuMTQgMzA3LjE0IDYxOC4yOSAzMDkuMjUgNjEyLjQzIDMxMS4zNiA2MDUuODMgMzEyLjQyIDU5OC40NiAzMTIuNDJaTTU5OC41MiAyOTQuOUM2MDUuNzYgMjk0LjkgNjExLjYyIDI5Mi41NSA2MTYuMDggMjg3Ljg0IDYyMC41NCAyODMuMTMgNjIyLjc4IDI3Ni45MiA2MjIuNzggMjY5LjE5IDYyMi43OCAyNjEuNDYgNjIwLjYxIDI1NS4wNCA2MTYuMjYgMjUwLjI3IDYxMS45MSAyNDUuNSA2MDYgMjQzLjEyIDU5OC41MiAyNDMuMTIgNTk0LjkgMjQzLjEyIDU5MS41NSAyNDMuNzMgNTg4LjQ3IDI0NC45MyA1ODUuMzkgMjQ2LjE0IDU4Mi43NCAyNDcuODMgNTgwLjUgMjUwIDU3OC4yNyAyNTIuMTcgNTc2LjU1IDI1NC43NyA1NzUuMzQgMjU3Ljc4IDU3NC4xMyAyNjAuOCA1NzMuNTMgMjY0LjEyIDU3My41MyAyNjcuNzQgNTczLjUzIDI3Ni40MyA1NzUuODUgMjgzLjEzIDU4MC41IDI4Ny44NCA1ODUuMTUgMjkyLjU1IDU5MS4xNSAyOTQuOSA1OTguNTIgMjk0LjlaIi8+PC9nPjwvc3ZnPg==", GT = "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTEwLjggMTIxLjYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIGlkPSJMYXllcl8yIiBvdmVyZmxvdz0iaGlkZGVuIj48ZGVmcz48Y2xpcFBhdGggaWQ9ImNsaXBwYXRoIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTEwLjgiIGhlaWdodD0iMTIxLjYiIGZpbGw9Im5vbmUiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBpZD0iTGF5ZXJfMS0yIj48ZyBpZD0iQWNjX0dUX1NvbGlkX1AyX1JHQiI+PGcgY2xpcC1wYXRoPSJ1cmwoI2NsaXBwYXRoKSI+PHBhdGggZD0iTTAgMCAwIDMxLjc1IDcxLjY1IDYwLjggMCA4OS44NSAwIDEyMS42IDExMC44IDc2LjY4IDExMC44IDQ0LjkyIDAgMFoiIGZpbGw9IiM3NTAwQzAiLz48L2c+PC9nPjwvZz48L3N2Zz4=";
+  slides.forEach((s, k) => {
+    if (s.classList.contains("slide--cover")) return;
+    const logo = document.createElement("img");
+    logo.className = "brand-logo"; logo.src = LOGO; logo.alt = "OpenSlava'26";
+    s.appendChild(logo);
+    if (s.classList.contains("slide--end")) return;
+    const foot = document.createElement("div");
+    foot.className = "foot";
+    foot.innerHTML = `<img class="foot__gt" src="${GT}" alt=""><span class="foot__copy">Copyright © 2026 Accenture. All rights reserved.</span><span class="foot__num">${k + 1}</span>`;
+    s.appendChild(foot);
+  });
+
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  let index = 0;
+  let notesOpen = false;
+  try { notesOpen = localStorage.getItem("deck-notes") === "1"; } catch (e) {}
+
+  // timer state
+  let remaining = 0, total = 0, ticking = null, timerSlide = -1;
+  const fmt = (s) => { const neg = s < 0; s = Math.abs(s); return `${neg ? "-" : ""}${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+  function paintTimer() {
+    $("timer-face").textContent = fmt(remaining);
+    $("timer-face").classList.toggle("is-over", remaining < 0);
+    $("timer-toggle").textContent = ticking ? "Pause" : remaining === total ? "Start" : "Resume";
+  }
+  function stopTimer() { clearInterval(ticking); ticking = null; }
+  function toggleTimer() {
+    if ($("timer").hidden) return;
+    if (ticking) { stopTimer(); } else { ticking = setInterval(() => { remaining -= 1; paintTimer(); }, 1000); }
+    paintTimer();
+  }
+  function resetTimer() { stopTimer(); remaining = total; paintTimer(); }
+
+  function show(i) {
+    index = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => s.classList.toggle("is-active", k === index));
+    const s = slides[index];
+    $("count").textContent = `${index + 1} / ${slides.length}`;
+    $("bar-title").textContent = s.dataset.title || "";
+    $("progress").style.width = `${((index + 1) / slides.length) * 100}%`;
+    const notes = s.querySelector(".notes");
+    $("notes-label").textContent = `Speaker notes · ${s.dataset.title || ""}`;
+    $("notes-body").innerHTML = notes ? notes.innerHTML : "<p>No notes for this slide.</p>";
+    const mins = Number(s.dataset.minutes || 0);
+    if (mins) {
+      $("timer").hidden = false;
+      if (timerSlide !== index) { stopTimer(); total = remaining = mins * 60; timerSlide = index; }
+      paintTimer();
+    } else {
+      $("timer").hidden = true;
+    }
+    try { history.replaceState(null, "", `#s${index + 1}`); } catch (e) {}
+  }
+
+  function setNotes(open) {
+    notesOpen = open;
+    $("notes-panel").hidden = !open;
+    $("notes-btn").setAttribute("aria-pressed", String(open));
+    root.style.setProperty("--notes-h", open ? "min(30vh, 260px)" : "0px");
+    try { localStorage.setItem("deck-notes", open ? "1" : "0"); } catch (e) {}
+  }
+  function fullscreen() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else root.requestFullscreen().catch(() => {});
+    } catch (e) {}
+  }
+  const help = (open) => { $("help").hidden = !open; if (open) $("help-close").focus(); };
+
+  $("prev").addEventListener("click", () => show(index - 1));
+  $("next").addEventListener("click", () => show(index + 1));
+  $("notes-btn").addEventListener("click", () => setNotes(!notesOpen));
+  $("full-btn").addEventListener("click", fullscreen);
+  $("timer-toggle").addEventListener("click", toggleTimer);
+  $("timer-reset").addEventListener("click", resetTimer);
+  $("help-btn").addEventListener("click", () => help(true));
+  $("help-close").addEventListener("click", () => help(false));
+  $("help").addEventListener("click", (e) => { if (e.target === $("help")) help(false); });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!$("help").hidden) { if (e.key === "Escape") help(false); return; }
+    const k = e.key;
+    if (k === "ArrowRight" || k === "PageDown" || k === " ") { e.preventDefault(); show(index + 1); }
+    else if (k === "ArrowLeft" || k === "PageUp") { e.preventDefault(); show(index - 1); }
+    else if (k === "Home") show(0);
+    else if (k === "End") show(slides.length - 1);
+    else if (k === "n" || k === "N") setNotes(!notesOpen);
+    else if (k === "f" || k === "F") fullscreen();
+    else if (k === "t" || k === "T") toggleTimer();
+    else if (k === "?") help(true);
+  });
+
+  const m = /^#s(\d+)$/.exec(location.hash || "");
+  setNotes(notesOpen);
+  show(m ? Number(m[1]) - 1 : 0);
+})();
+</script>
+</body>
+</html>

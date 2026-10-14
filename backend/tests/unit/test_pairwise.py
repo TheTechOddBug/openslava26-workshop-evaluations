@@ -1,3 +1,5 @@
+import json
+
 from workshop_evals.domain.scoring.judge_rubric import (
     build_pairwise_messages,
     parse_pairwise_verdict,
@@ -11,6 +13,21 @@ def test_parse_json_winner_a():
 def test_parse_json_winner_b():
     winner, _ = parse_pairwise_verdict('{"winner": "B", "justification": "more complete"}')
     assert winner == "B"
+
+
+def test_parse_keeps_a_long_justification_whole():
+    long_text = "Answer A covers every requirement and explains its trade-offs. " * 5
+    winner, justification = parse_pairwise_verdict(
+        json.dumps({"winner": "A", "justification": long_text})
+    )
+    assert winner == "A"
+    assert justification == long_text
+
+
+def test_parse_verdict_missing_its_closing_brace():
+    # without the JSON, the keyword fallback would see both "A" and "B" and call a tie
+    text = '{\n  "winner": "B",\n  "justification": "Answer B covers A\'s points and more."'
+    assert parse_pairwise_verdict(text) == ("B", "Answer B covers A's points and more.")
 
 
 def test_parse_json_tie():

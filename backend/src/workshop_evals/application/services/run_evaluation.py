@@ -58,7 +58,7 @@ class RunEvaluationService:
         if model is None:
             return _error_cell(case, candidate, f"unknown model '{candidate.model_id}'")
 
-        prompt = candidate.prompt_override or case.prompt
+        prompt = candidate.prompt_for(case.prompt)
         messages = [{"role": "user", "content": prompt}]
         completion = await self._llm.chat(model, messages, candidate.params)
         if completion.error:

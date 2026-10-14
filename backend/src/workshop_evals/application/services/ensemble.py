@@ -54,7 +54,7 @@ class EnsembleJudgeService:
         params = judge_params or RunParams()
         completion = await self._llm.chat(
             model,
-            [{"role": "user", "content": candidate.prompt_override or case.prompt}],
+            [{"role": "user", "content": candidate.prompt_for(case.prompt)}],
             candidate.params,
         )
         response = completion.text

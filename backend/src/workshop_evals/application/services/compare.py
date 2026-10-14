@@ -66,10 +66,10 @@ class ComparePairwiseService:
 
         params = judge_params or RunParams()
         response_a = await self._answer(
-            model_a, candidate_a.prompt_override or case.prompt, candidate_a.params
+            model_a, candidate_a.prompt_for(case.prompt), candidate_a.params
         )
         response_b = await self._answer(
-            model_b, candidate_b.prompt_override or case.prompt, candidate_b.params
+            model_b, candidate_b.prompt_for(case.prompt), candidate_b.params
         )
 
         winner, justification = await self._judge(case, response_a, response_b, judge, params)

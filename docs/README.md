@@ -75,6 +75,10 @@ npm run dev
 # Opens at http://localhost:5173
 ```
 
+Ports taken? Run the backend with `--port 8001` and the frontend with
+`BACKEND_PORT=8001 FRONTEND_PORT=5174 npm run dev` (or put both variables in
+`frontend/.env`). The labs then live at `http://localhost:5174` instead.
+
 ### 3. Cloud keys (optional)
 
 Copy `backend/.env.example` to `backend/.env` and add the keys for the providers you use:

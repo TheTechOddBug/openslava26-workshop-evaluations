@@ -101,6 +101,28 @@ test("matrix: runs cases against candidates and fills the grid", async ({ page }
   await expect(page.getByText(/Results — completed/)).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".matrix table")).toBeVisible();
   await expect(page.locator(".cell-scores").first()).toBeVisible();
+  // token usage per cell and a per-column total
+  await expect(page.locator(".cell-scores .cell-usage").first()).toHaveText(/\d+ in · \d+ out/);
+  await expect(page.locator(".matrix tfoot")).toContainText("Tokens");
+  await expect(page.locator(".matrix tfoot .cell-usage--total")).toHaveText(/\d+ in · \d+ out/);
+});
+
+test("matrix: the gate blocks below the threshold and passes when it is lowered", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Matrix" }).click();
+  await page.getByLabel("Category").selectOption("sentiment_classification");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Run matrix" }).click();
+  await expect(page.getByText(/Results — completed/)).toBeVisible({ timeout: 30_000 });
+
+  // demo answers are always "positive": 1 of the 3 default cases passes, mean 0.33
+  const gate = page.locator(".matrix tfoot .gate-row");
+  await expect(gate.locator(".gate-verdict")).toHaveText("BLOCKED");
+  await expect(gate).toContainText("exact_match 0.33 < 0.90");
+
+  await page.getByLabel("exact_match threshold").fill("0.3");
+  await expect(gate.locator(".gate-verdict")).toHaveText("PASS");
+  await expect(gate).toContainText("exact_match 0.33 ≥ 0.30");
 });
 
 test("matrix: two prompt variants become two columns", async ({ page }) => {
@@ -110,7 +132,8 @@ test("matrix: two prompt variants become two columns", async ({ page }) => {
 
   await page.getByRole("button", { name: "Add candidate" }).click();
   const overrides = page.getByPlaceholder("Replace the case prompt — e.g. a refined version");
-  await overrides.nth(1).fill("Classify strictly as positive, negative or neutral. Text: great!");
+  await expect(page.getByText("where the case's own prompt should go").first()).toBeVisible();
+  await overrides.nth(1).fill("Classify strictly as positive, negative or neutral.\n\n{prompt}");
 
   await page.getByRole("button", { name: "Run matrix" }).click();
   await expect(page.getByText(/Results — completed/)).toBeVisible({ timeout: 30_000 });

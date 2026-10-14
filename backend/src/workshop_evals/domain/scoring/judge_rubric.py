@@ -186,6 +186,34 @@ def weighted_score(dims: dict[str, float], category: str) -> float:
     return max(0.0, min(1.0, raw / (total_w * 10.0)))
 
 
+def _load_json_object(text: str) -> dict | None:
+    """Return the JSON object in a judge reply, tolerating a reply cut off at the end.
+
+    Small judges (Llama 3.2 3B, for one) often stop right before the closing brace, or
+    inside the justification string. A complete object is preferred; otherwise the
+    reply is closed with ``}`` or ``"}`` and parsed again. Returns None when no object
+    can be read.
+    """
+    start = text.find("{")
+    if start == -1:
+        return None
+    body = text[start:]
+    candidates = []
+    end = body.rfind("}")
+    if end != -1:
+        candidates.append(body[: end + 1])
+    tail = body.rstrip().rstrip(",")
+    candidates += [tail + "}", tail + '"}']
+    for candidate in candidates:
+        try:
+            value = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    return None
+
+
 def parse_judge_response(
     text: str,
     category: str,
@@ -202,7 +230,7 @@ def parse_judge_response(
     Returns:
         (score, justification, dims)
         - score:         Weighted score in [0, 1].
-        - justification: The judge's written justification, truncated to 200 chars.
+        - justification: The judge's written justification, in full.
         - dims:          Dict mapping each dimension name to its raw score (0-10).
 
     On any parse failure returns (0.0, "unparseable judge output", {}).
@@ -212,13 +240,8 @@ def parse_judge_response(
         r"<think(?:ing)?>.*?</think(?:ing)?>", "", text, flags=re.DOTALL | re.IGNORECASE
     ).strip()
 
-    m = re.search(r"\{.*\}", clean, re.DOTALL)
-    if not m:
-        return 0.0, "unparseable judge output", {}
-
-    try:
-        verdict = json.loads(m.group(0))
-    except json.JSONDecodeError:
+    verdict = _load_json_object(clean)
+    if verdict is None:
         return 0.0, "unparseable judge output", {}
 
     try:
@@ -228,7 +251,7 @@ def parse_judge_response(
             dims[dim] = max(0.0, min(10.0, float(raw_val)))
 
         score = weighted_score(dims, category)
-        justification = str(verdict.get("justification", ""))[:200]
+        justification = str(verdict.get("justification", ""))
         return score, justification, dims
     except Exception:
         return 0.0, "unparseable judge output", {}
@@ -293,14 +316,10 @@ def parse_pairwise_verdict(text: str) -> tuple[str, str]:
     ).strip()
     winner = ""
     justification = ""
-    m = re.search(r"\{.*\}", clean, re.DOTALL)
-    if m:
-        try:
-            verdict = json.loads(m.group(0))
-            winner = str(verdict.get("winner", "")).strip().upper()
-            justification = str(verdict.get("justification", ""))[:200]
-        except json.JSONDecodeError:
-            winner = ""
+    verdict = _load_json_object(clean)
+    if verdict is not None:
+        winner = str(verdict.get("winner", "")).strip().upper()
+        justification = str(verdict.get("justification", ""))
     if winner not in ("A", "B"):
         if winner == "TIE":
             return "tie", justification

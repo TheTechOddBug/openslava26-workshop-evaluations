@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Evaluation Lab Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: sticky lab index on the left (top strip on phones), one reading column of lab "run sheets" on the right. */
+:root {
+  --bg: #f3f6f7;
+  --surface: #ffffff;
+  --ink: #15212b;
+  --muted: #566774;
+  --line: #d6dfe4;
+  --accent: #0b6e69;
+  --accent-soft: #e0f0ee;
+  --warn: #8a5300;
+  --warn-soft: #fbefd9;
+  --pass: #1e7b3a;
+  --code-bg: #eaf0f2;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --step--1: 0.84rem;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.55rem;
+  --step-3: 2.2rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151a; --surface: #162027; --ink: #e2eaee; --muted: #94a5b0; --line: #283741;
+    --accent: #52c2b8; --accent-soft: #143230; --warn: #e9b45e; --warn-soft: #30261a;
+    --pass: #6fcf8a; --code-bg: #1d2a32; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151a; --surface: #162027; --ink: #e2eaee; --muted: #94a5b0; --line: #283741;
+  --accent: #52c2b8; --accent-soft: #143230; --warn: #e9b45e; --warn-soft: #30261a;
+  --pass: #6fcf8a; --code-bg: #1d2a32; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: var(--step-0); line-height: 1.55;
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+code, kbd, pre { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 4px; }
+
+.shell {
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px;
+  max-width: 1180px; margin: 0 auto; padding-inline: 24px; padding-block: 32px 80px;
+}
+
+/* ---------- index ---------- */
+.index { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; display: flex; flex-direction: column; gap: 18px; }
+.brand { display: flex; flex-direction: column; gap: 2px; }
+.brand__name { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); }
+.brand__axes { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.02em; }
+.overall { display: flex; flex-direction: column; gap: 6px; }
+.overall__row { display: flex; justify-content: space-between; font-size: var(--step--1); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 200ms ease; }
+.toc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc a {
+  display: grid; grid-template-columns: 2.2em 1fr auto; align-items: baseline; gap: 6px;
+  padding: 6px 8px; border-radius: 6px; text-decoration: none; color: var(--ink); font-size: 0.95rem;
+}
+.toc a:hover { background: var(--accent-soft); }
+.toc a.is-done .toc__num { color: var(--pass); }
+.toc__num { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+.toc__count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.open-app {
+  display: inline-flex; justify-content: center; padding: 9px 12px; border-radius: 6px;
+  background: var(--accent); color: var(--surface); font-weight: 600; text-decoration: none;
+}
+.open-app:hover { filter: brightness(1.08); }
+
+/* ---------- main ---------- */
+main { display: flex; flex-direction: column; gap: 56px; min-width: 0; }
+.hero { display: flex; flex-direction: column; gap: 14px; max-width: 68ch; }
+.hero h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.01em; }
+.hero p { margin: 0; color: var(--muted); font-size: var(--step-1); }
+.status-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--line); font-size: var(--step--1); background: var(--surface); white-space: nowrap;
+}
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--pass); }
+.chip--warn::before { background: var(--warn); }
+
+section.block { display: flex; flex-direction: column; gap: 18px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.block > header { display: flex; flex-direction: column; gap: 6px; }
+.block h2 { font-size: var(--step-2); font-weight: 700; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+.prose { max-width: 68ch; display: flex; flex-direction: column; gap: 10px; }
+.prose p { margin: 0; }
+
+/* commands */
+.cmds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.cmd { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cmd__label { font-size: var(--step--1); font-weight: 600; color: var(--muted); }
+.code {
+  position: relative; background: var(--code-bg); border-radius: 8px; border: 1px solid var(--line);
+}
+.code pre { margin: 0; padding: 12px 14px; padding-right: 64px; overflow-x: auto; line-height: 1.5; white-space: pre; }
+.copy {
+  position: absolute; top: 7px; right: 7px; font: 500 0.72rem var(--font-mono);
+  padding: 3px 8px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.copy:hover { border-color: var(--accent); color: var(--accent); }
+
+/* cast table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: var(--step--1); color: var(--muted); font-weight: 600; background: var(--bg); }
+td .mono { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+
+/* lab run sheet */
+.lab { scroll-margin-top: 16px; }
+.lab > header { gap: 8px; }
+.lab__top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+.lab__num { font-family: var(--font-mono); color: var(--accent); font-size: var(--step-1); }
+.lab__tab { font-size: var(--step--1); color: var(--muted); }
+.lab__tab b { color: var(--ink); font-weight: 600; }
+.recipe {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin: 0;
+}
+.recipe dt { font-size: var(--step--1); color: var(--muted); padding-top: 2px; }
+.recipe dd { margin: 0; min-width: 0; }
+.mech { display: inline-block; font-family: var(--font-mono); font-size: 0.76rem; padding: 1px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); margin: 1px 4px 1px 0; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-width: 72ch; }
+.steps label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.steps label:hover { background: var(--accent-soft); }
+.steps input { width: 16px; height: 16px; margin-top: 4px; accent-color: var(--accent); }
+.steps input:checked + span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+
+.quirk {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 8px;
+  background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); max-width: 72ch;
+}
+.quirk__title { font-weight: 600; color: var(--warn); font-size: 0.95rem; }
+.quirk p { margin: 0; }
+
+.look { margin: 0; padding-left: 1.1em; max-width: 70ch; display: flex; flex-direction: column; gap: 4px; }
+.sub { font-family: var(--font-display); font-size: var(--step-1); font-weight: 600; }
+
+details.reflect { max-width: 70ch; border-top: 1px solid var(--line); padding-top: 10px; }
+details.reflect summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details.reflect ul { margin: 8px 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+
+.notes { display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+.notes label { font-size: var(--step--1); color: var(--muted); font-weight: 600; }
+textarea, select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+textarea { min-height: 76px; resize: vertical; width: 100%; }
+
+
+.footer-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: var(--muted); font-size: var(--step--1); border-top: 1px solid var(--line); padding-top: 18px; }
+.btn { font: inherit; font-size: 0.9rem; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn--danger { border-color: var(--warn); color: var(--warn); }
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-inline: 16px; padding-block: 20px 64px; }
+  .index { position: static; }
+  .toc { flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+  .toc a { grid-template-columns: auto auto; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); }
+  .toc__count { display: none; }
+  .hero h1 { font-size: 1.8rem; }
+  .recipe { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .recipe dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="index" aria-label="Labs">
+    <div class="brand">
+      <span class="brand__name">Evaluation Lab Companion</span>
+      <span class="brand__axes">prompts × models × mechanisms</span>
+    </div>
+    <a class="open-app" href="http://localhost:5174" target="_blank" rel="noopener">Open the app on :5174</a>
+    <div class="overall">
+      <div class="overall__row"><span>Workshop progress</span><span id="overall-count">0 / 0</span></div>
+      <div class="bar"><span id="overall-bar"></span></div>
+    </div>
+    <ul class="toc" id="toc">
+      <li><a href="#setup"><span class="toc__num">—</span><span>Before you start</span><span class="toc__count" data-count="setup"></span></a></li>
+      <li><a href="#lab-00"><span class="toc__num">00</span><span>Introduction</span><span class="toc__count" data-count="lab-00"></span></a></li>
+      <li><a href="#lab-01"><span class="toc__num">01</span><span>Deterministic</span><span class="toc__count" data-count="lab-01"></span></a></li>
+      <li><a href="#lab-02"><span class="toc__num">02</span><span>Prompt refinement</span><span class="toc__count" data-count="lab-02"></span></a></li>
+      <li><a href="#lab-03"><span class="toc__num">03</span><span>Similarity</span><span class="toc__count" data-count="lab-03"></span></a></li>
+      <li><a href="#lab-04"><span class="toc__num">04</span><span>Execution-based</span><span class="toc__count" data-count="lab-04"></span></a></li>
+      <li><a href="#lab-05"><span class="toc__num">05</span><span>LLM as judge</span><span class="toc__count" data-count="lab-05"></span></a></li>
+      <li><a href="#lab-06"><span class="toc__num">06</span><span>Judge reliability</span><span class="toc__count" data-count="lab-06"></span></a></li>
+      <li><a href="#lab-07"><span class="toc__num">07</span><span>The full matrix</span><span class="toc__count" data-count="lab-07"></span></a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <h1>Evaluation Lab Companion</h1>
+      <p>A run sheet for the eight labs in <code>docs/</code>, set up for this laptop: local Ollama models, the backend on port 8001 and the app on port 5174. Each lab lists the exact settings to pick, steps to tick off, and the places where the app behaves differently from the written lab.</p>
+      <div class="status-strip">
+        <span class="chip">Ollama 0.40.2 with 3 models</span>
+        <span class="chip">Backend → :8001</span>
+        <span class="chip">App → :5174</span>
+        <span class="chip chip--warn">No cloud API keys</span>
+      </div>
+    </div>
+
+    <!-- ===================== SETUP ===================== -->
+    <section class="block" id="setup" data-section="setup">
+      <header>
+        <span class="eyebrow">Before you start</span>
+        <h2>Start the three services</h2>
+        <p class="lede">Ollama starts on its own at login. The backend and the app each need a terminal. Ports 8000 and 5173 are taken by an SSH tunnel on this laptop, so the app uses 8001 and 5174, set in <code>frontend/.env</code>.</p>
+      </header>
+      <div class="cmds">
+        <div class="cmd">
+          <span class="cmd__label">Terminal 1 — backend with real models</span>
+          <div class="code"><pre>cd ~/openslava26-workshop-evaluations/backend
+.venv/bin/uvicorn \
+  workshop_evals.adapters.inbound.http.app:app \
+  --port 8001 --reload</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="cmd">
+          <span class="cmd__label">Terminal 2 — the web app</span>
+          <div class="code"><pre>cd ~/openslava26-workshop-evaluations/frontend
+npm run dev
+# serves http://localhost:5174</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="cmd">
+          <span class="cmd__label">Check Ollama and the models</span>
+          <div class="code"><pre>ollama list
+curl -s localhost:11434/api/version</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="cmd">
+          <span class="cmd__label">Stop everything I started earlier</span>
+          <div class="code"><pre>pkill -f workshop_evals   # backend (uvicorn or launcher)
+pkill -f workshop-evals
+pkill -f vite              # web app</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+      </div>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="setup-1"><span>Ollama icon is in the menu bar and <code>ollama list</code> shows <code>qwen3:4b</code>, <code>llama3.2:3b</code> and <code>qwen2.5-coder:7b</code>.</span></label></li>
+        <li><label><input type="checkbox" id="setup-2"><span>Backend is running: <a href="http://localhost:8001/docs" target="_blank" rel="noopener">localhost:8001/docs</a> shows the API docs.</span></label></li>
+        <li><label><input type="checkbox" id="setup-3"><span>App is running: <a href="http://localhost:5174" target="_blank" rel="noopener">localhost:5174</a> shows <b>Evaluation Lab</b> with no "Cannot reach the backend" banner.</span></label></li>
+      </ul>
+
+      <h3 class="sub">Your cast of models</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name in the app</th><th>Use it as</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Qwen3 4B (local)<br><span class="mono">qwen3-4b · 2.5 GB</span></td><td>Small candidate</td><td>Reasoning model. It thinks before answering, so it is slower and can run out of tokens. Don't use it as a judge.</td></tr>
+            <tr><td>Llama 3.2 3B (local)<br><span class="mono">llama3-2-3b · 2.0 GB</span></td><td>Default judge, or small candidate</td><td>Answers directly and returns the rubric JSON reliably. Tends to add a sentence around the label.</td></tr>
+            <tr><td>Qwen2.5 Coder 7B (local)<br><span class="mono">qwen25-coder-7b · 4.7 GB</span></td><td>"Large" candidate, reference judge</td><td>Largest local model. Best for the code and SQL labs, and the stronger judge in Lab 06.</td></tr>
+            <tr><td>GPT-4o, GPT-4o Mini, Claude Haiku 4.5, Claude Sonnet 4.5</td><td>Skip for now</td><td>Listed in the dropdowns, but no API keys are set, so calls to them fail. Add a key in the <b>Models</b> tab if you want a cloud judge.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== LAB 00 ===================== -->
+    <section class="block lab" id="lab-00" data-section="lab-00">
+      <header>
+        <div class="lab__top"><span class="lab__num">00</span><h2>Introduction</h2><span class="lab__tab">Tabs: <b>all</b></span></div>
+        <p class="lede">Get the three-axis model in your head: every cell is one case × one candidate × one mechanism, producing a response, a score, a verdict and usage.</p>
+      </header>
+      <div class="quirk"><span class="quirk__title">The app has seven tabs, not three</span><p>The lab text describes Playground, Matrix and Judge reliability. The app also has <b>Compare</b>, <b>Ensemble</b> (both used in Lab 06), <b>Datasets</b> and <b>Models</b>.</p></div>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l00-1"><span>Open the app and find the subtitle "prompts · models · evaluation mechanisms".</span></label></li>
+        <li><label><input type="checkbox" id="l00-2"><span><b>Playground</b>: pick category <code>sentiment_classification</code>. Hover a greyed mechanism such as <span class="mech">Code execution</span> and see why it is unavailable (the case has no test suite).</span></label></li>
+        <li><label><input type="checkbox" id="l00-3"><span><b>Matrix</b>: look at the Cases, Candidates and Mechanisms cards. Don't run anything yet.</span></label></li>
+        <li><label><input type="checkbox" id="l00-4"><span><b>Judge reliability</b>: look at the three model selectors (candidate, judge under test, reference judge).</span></label></li>
+        <li><label><input type="checkbox" id="l00-5"><span><b>Datasets</b>: browse a category and see which fields unlock which mechanisms.</span></label></li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>Think of a task you recently used a model for. Could "correct" be written as a reference string, a JSON schema or a rubric?</li>
+        <li>What would you need to measure to say "this model improved since last week"?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-00">Your notes</label><textarea id="n-lab-00" placeholder="What surprised you in the tour?"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 01 ===================== -->
+    <section class="block lab" id="lab-01" data-section="lab-01">
+      <header>
+        <div class="lab__top"><span class="lab__num">01</span><h2>Deterministic evaluation</h2><span class="lab__tab">Tab: <b>Playground</b></span></div>
+        <p class="lede">Turn "it seems fine" into a number with exact match on sentiment, then add a judge and watch the two verdicts disagree.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Prompt</dt><dd>From dataset · <code>sentiment_classification</code> · start at <code>sent-01</code></dd>
+        <dt>Candidate</dt><dd>Qwen3 4B (local)</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">Exact match</span> then add <span class="mech">LLM judge</span></dd>
+        <dt>Judge</dt><dd>Llama 3.2 3B (local)</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l01-1"><span>Select <code>sent-01</code>, tick only <span class="mech">Exact match</span>, click <b>Evaluate</b>. Read the response and the score card (1.0 or 0.0 plus what matched).</span></label></li>
+        <li><label><input type="checkbox" id="l01-2"><span>Step through more cases. Include the hard ones: <code>sent-08</code> (sarcasm), <code>sent-09</code> (mixed), <code>sent-13</code> (hedged negative).</span></label></li>
+        <li><label><input type="checkbox" id="l01-3"><span>Add <span class="mech">LLM judge</span> with Llama 3.2 3B as judge and evaluate again.</span></label></li>
+        <li><label><input type="checkbox" id="l01-4"><span>Find one case where exact match and the judge disagree, and read the response to see why.</span></label></li>
+        <li><label><input type="checkbox" id="l01-5"><span>Swap the candidate to Llama 3.2 3B and repeat one case. Compare response length and the judge's clarity score.</span></label></li>
+      </ul>
+      <div class="quirk"><span class="quirk__title">Exact match is more lenient than the lab says</span><p>It passes if the reference appears anywhere in the response, so "I would classify this as positive." scores 1.0. Failures here mean the model chose the wrong label, or the response contains another label word. They don't mean the answer was wrapped in a sentence.</p></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>On classification, exact match is binary. Averaged over cases it becomes accuracy.</li>
+        <li>The judge gives a continuous score. Ask what 0.6 would mean for a classifier, and how you would act on it.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>Would you trust 100% on 5 cases? On 50? How many cases do you need before you believe the number?</li>
+        <li>What does the cleaner exact-match number tell you about matching the mechanism to the shape of the task?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-01">Your notes</label><textarea id="n-lab-01" placeholder="Which cases failed, and why?"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 02 ===================== -->
+    <section class="block lab" id="lab-02" data-section="lab-02">
+      <header>
+        <div class="lab__top"><span class="lab__num">02</span><h2>Prompt refinement</h2><span class="lab__tab">Tab: <b>Matrix</b></span></div>
+        <p class="lede">Hold the model fixed, change only the prompt, and see how much of the quality gap the prompt alone closes.</p>
+      </header>
+      <h3 class="sub">Override templates</h3>
+      <div class="prose"><p>Paste one into a candidate's <b>Prompt override (optional)</b> field. The app replaces <code>{prompt}</code> with each case's own prompt, so one template runs across every case you tick.</p></div>
+      <div class="cmds">
+        <div class="cmd">
+          <span class="cmd__label">Refined (from the lab)</span>
+          <div class="code"><pre>You are a sentiment classifier. Read the following customer review and classify
+its overall sentiment using exactly one of these three labels:
+
+- positive: the review expresses satisfaction, praise, or approval
+- negative: the review expresses dissatisfaction, complaint, or criticism
+- neutral: the review is balanced, factual, or expresses neither clear approval nor disapproval
+
+Respond with exactly one word — the label — and nothing else.
+
+Review:
+{prompt}</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="cmd">
+          <span class="cmd__label">Deliberately vague, to force a gap</span>
+          <div class="code"><pre>What do you make of this?
+
+{prompt}</pre><button class="copy" type="button">Copy</button></div>
+        </div>
+      </div>
+
+      <dl class="recipe">
+        <dt>Cases</dt><dd><code>sentiment_classification</code> · 5–8 cases, including <code>sent-08</code>, <code>sent-09</code> and <code>sent-13</code></dd>
+        <dt>Candidate 1</dt><dd>Label <code>naive</code> · Llama 3.2 3B · no override (the dataset's own prompt)</dd>
+        <dt>Candidate 2</dt><dd>Label <code>refined</code> · Llama 3.2 3B · override: the refined template</dd>
+        <dt>Candidate 3</dt><dd>Label <code>vague</code> · Llama 3.2 3B · override: the vague template (optional)</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">Exact match</span></dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l02-1"><span>On <b>Matrix</b>, choose <code>sentiment_classification</code> and tick 5–8 cases.</span></label></li>
+        <li><label><input type="checkbox" id="l02-2"><span>Set up the three candidates above, all on the same model. Use <b>Add candidate</b> for each new row.</span></label></li>
+        <li><label><input type="checkbox" id="l02-3"><span>Tick <span class="mech">Exact match</span> and click <b>Run matrix</b>.</span></label></li>
+        <li><label><input type="checkbox" id="l02-4"><span>Count the passes per column, then read the responses where <code>naive</code> and <code>refined</code> disagree.</span></label></li>
+        <li><label><input type="checkbox" id="l02-5"><span>Cost check: compare the <b>Tokens</b> row under the table. Each cell shows <code>in · out</code> tokens and each column has a total. The refined prompt costs more <b>input</b> tokens, but a one-word answer can cut the <b>output</b> tokens a lot. Hover a cell for its latency.</span></label></li>
+      </ul>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>Where <code>naive</code> fails and <code>refined</code> passes, read the naive response. Is the label missing, or are two labels mentioned?</li>
+        <li>If <code>naive</code> already passes everything, the dataset prompt is already well constrained. That is a finding too. Add the <code>vague</code> column to see a gap.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>When does a refined prompt become overfit to the evaluation set? How would you test for that?</li>
+        <li>If the score went from 72% to 88% and stopped, what would you try next?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-02">Your notes</label><textarea id="n-lab-02" placeholder="Passes per column: naive __ / refined __ / default __"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 03 ===================== -->
+    <section class="block lab" id="lab-03" data-section="lab-03">
+      <header>
+        <div class="lab__top"><span class="lab__num">03</span><h2>Similarity metrics</h2><span class="lab__tab">Tab: <b>Playground</b></span></div>
+        <p class="lede">Score summaries by word overlap with BLEU, ROUGE-L and fuzzy match, then compare that with a judge that reads for meaning.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Prompt</dt><dd>From dataset · <code>summarization</code> · <code>summ-101</code> (ECB rate decision), then <code>summ-102</code></dd>
+        <dt>Candidate</dt><dd>Qwen2.5 Coder 7B or Llama 3.2 3B. If Qwen3 4B returns an empty response, raise <b>Max tokens</b>.</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">BLEU</span><span class="mech">ROUGE-L</span><span class="mech">Fuzzy match</span> then add <span class="mech">LLM judge</span></dd>
+        <dt>Judge</dt><dd>Llama 3.2 3B (local)</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l03-1"><span>Run the three similarity mechanisms on <code>summ-101</code>. Read each detail string: BLEU shows precisions and brevity penalty, ROUGE-L shows LCS length, precision and recall.</span></label></li>
+        <li><label><input type="checkbox" id="l03-2"><span>Add <span class="mech">LLM judge</span> and evaluate again. Do the judge and ROUGE-L agree?</span></label></li>
+        <li><label><input type="checkbox" id="l03-3"><span>Try <code>summ-102</code>. If the summary is short, see how BLEU's brevity penalty reacts.</span></label></li>
+        <li><label><input type="checkbox" id="l03-4"><span>Also tick <span class="mech">Exact match</span> and confirm it fails on free-form text.</span></label></li>
+      </ul>
+      <div class="quirk"><span class="quirk__title">Exact match is not greyed out here</span><p>The lab says it is. The app enables exact match for any case with a reference, summaries included. It will simply score 0.0, which shows the same point.</p></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>Low ROUGE-L with a high judge score is the gap between overlap and meaning: a good paraphrase that the word counter missed.</li>
+        <li>High ROUGE-L with low BLEU usually means a long response that covers the reference but adds material.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>Where in your work would ROUGE-L be a safe proxy for quality, and where would it be dangerous alone?</li>
+        <li>When is a second model call for the judge worth its cost?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-03">Your notes</label><textarea id="n-lab-03" placeholder="BLEU / ROUGE-L / fuzzy / judge for summ-101 and summ-102"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 04 ===================== -->
+    <section class="block lab" id="lab-04" data-section="lab-04">
+      <header>
+        <div class="lab__top"><span class="lab__num">04</span><h2>Execution-based evaluation</h2><span class="lab__tab">Tab: <b>Playground</b></span></div>
+        <p class="lede">Grade code by running it against tests, SQL by running it against a schema, and arithmetic by checking the number.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Code</dt><dd><code>code_generation</code> · <code>code-101</code> onwards · <span class="mech">Code execution</span></dd>
+        <dt>SQL</dt><dd><code>sql</code> · <code>sql-101</code> onwards · <span class="mech">SQL execution</span></dd>
+        <dt>Numbers</dt><dd><code>reasoning</code> · <code>reason-101</code> · <span class="mech">Numeric tolerance</span> (within 1%)</dd>
+        <dt>Candidates</dt><dd>Qwen2.5 Coder 7B, then the same cases with Qwen3 4B</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l04-1"><span><code>code-101</code> with <span class="mech">Code execution</span> on Qwen2.5 Coder 7B. On a 0.0, read the test output in the detail string.</span></label></li>
+        <li><label><input type="checkbox" id="l04-2"><span>Run two or three more code cases and note the pass rate.</span></label></li>
+        <li><label><input type="checkbox" id="l04-3"><span>Repeat the same cases with Qwen3 4B. Its <code>&lt;think&gt;</code> block is stripped before running. If the response is cut off, raise <b>Max tokens</b>.</span></label></li>
+        <li><label><input type="checkbox" id="l04-4"><span><code>sql-101</code> with <span class="mech">SQL execution</span>. Check whether the reference query has <code>ORDER BY</code> (ordered compare) or not (any row order is fine).</span></label></li>
+        <li><label><input type="checkbox" id="l04-5"><span><code>reason-101</code> with <span class="mech">Numeric tolerance</span>: the last number in the response is compared to the reference.</span></label></li>
+      </ul>
+      <div class="quirk"><span class="quirk__title"><code>code-101</code> and <code>sql-101</code> fail for every local model</span><p>That is expected, and a good example of "would you have passed this by reading it?". Each model misses a different rule: Qwen2.5 Coder 7B splits lines without checking for <code>=</code> (<code>ValueError: not enough values to unpack</code>), and Llama 3.2 3B loses the value <code>abc=def</code> (<code>KeyError: 'TOKEN'</code>). For passes, try <code>code-102</code>, <code>code-103</code> and <code>code-105</code> with Qwen2.5 Coder 7B.</p><p>If Qwen3 4B shows <code>NameError: name 'merge_env_files' is not defined</code>, it ran out of tokens while thinking and returned no code. Raise <b>Max tokens</b>, or count it as a fail for budget reasons.</p><p><code>sql-101</code> asks for the best model <i>in each category</i>, so the right answer has 2 rows. Qwen2.5 Coder 7B computes the averages correctly, then adds <code>LIMIT 1</code> and keeps only the top row overall (<code>rows_candidate=1 rows_reference=2</code>). Llama 3.2 3B returns 2 rows but groups by category only, which mixes the models' averages. <code>order_sensitive=True</code> means row order counts too, because the reference ends with <code>ORDER BY category</code>. When Qwen3 4B runs out of tokens it returns no SQL, shown as "no SQL query found in the response".</p></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>Failure kind points to the fix: a syntax error, a failed assertion, or a timeout.</li>
+        <li>Would you have passed the code by reading it? If you disagree with the grader, the test suite may be too strict or incomplete.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>Is there a case where you would want partial credit for code?</li>
+        <li>What would a "test suite" look like for a data extraction task?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-04">Your notes</label><textarea id="n-lab-04" placeholder="Code pass rate per model, SQL results, numeric result"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 05 ===================== -->
+    <section class="block lab" id="lab-05" data-section="lab-05">
+      <header>
+        <div class="lab__top"><span class="lab__num">05</span><h2>LLM as judge</h2><span class="lab__tab">Tab: <b>Playground</b></span></div>
+        <p class="lede">Have a second model score open-ended answers on five dimensions: correctness, completeness, robustness, clarity and efficiency, each 0–10.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Prompt</dt><dd><code>writing</code> · <code>write-001</code>, or <code>instruction_following</code> · <code>instr-101</code></dd>
+        <dt>Candidates</dt><dd>Qwen3 4B, then Qwen2.5 Coder 7B</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">LLM judge</span></dd>
+        <dt>Judges</dt><dd>Llama 3.2 3B, then Qwen2.5 Coder 7B for comparison</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l05-1"><span>Evaluate <code>write-001</code> with Qwen3 4B as candidate and Llama 3.2 3B as judge. Read the five dimensions and the justification.</span></label></li>
+        <li><label><input type="checkbox" id="l05-2"><span>Change only the candidate to Qwen2.5 Coder 7B and evaluate again. Which dimensions moved?</span></label></li>
+        <li><label><input type="checkbox" id="l05-3"><span>Keep the candidate, change the judge to Qwen2.5 Coder 7B. Same answer, different judge: how far apart are the scores?</span></label></li>
+        <li><label><input type="checkbox" id="l05-4"><span>Self-judge: set candidate and judge both to Llama 3.2 3B. Compare with the cross-model score.</span></label></li>
+        <li><label><input type="checkbox" id="l05-5"><span>Optional: pick Qwen3 4B as the judge and see the empty score caused by a reasoning model spending its budget thinking.</span></label></li>
+      </ul>
+      <div class="quirk"><span class="quirk__title">The self-judge warning is easy to miss</span><p>There is no warning banner. When candidate and judge are the same model, the judge's justification starts with "self-evaluation: judge equals candidate."</p></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>For instruction following, completeness often drops before correctness does.</li>
+        <li>Rate the response yourself first. Where you and the judge disagree a lot, the judge or the weights are off for this task.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>How would you check that a judge grades correctly for a given task?</li>
+        <li>For a new category such as customer service chats, which dimension would you weight most?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-05">Your notes</label><textarea id="n-lab-05" placeholder="Scores by candidate × judge"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 06 ===================== -->
+    <section class="block lab" id="lab-06" data-section="lab-06">
+      <header>
+        <div class="lab__top"><span class="lab__num">06</span><h2>Judge reliability</h2><span class="lab__tab">Tabs: <b>Judge reliability</b>, <b>Compare</b>, <b>Ensemble</b></span></div>
+        <p class="lede">Evaluate the evaluator. Measure how closely a judge agrees with a stronger reference judge, test it for position bias, and average several judges.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Dataset</dt><dd><code>writing</code> (8 cases; every case is used)</dd>
+        <dt>Candidate</dt><dd>Qwen3 4B (local)</dd>
+        <dt>Judge under test</dt><dd>Llama 3.2 3B (local)</dd>
+        <dt>Reference judge</dt><dd>Qwen2.5 Coder 7B (local), the strongest judge available without cloud keys</dd>
+        <dt>Verdict rule</dt><dd>reliable: Pearson ≥ 0.7 and MAE ≤ 1.5 · questionable: Pearson ≥ 0.4 · otherwise unreliable</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l06-1"><span>Click <b>Measure agreement</b>. The button reads "Generating answers…" and then "Comparing judges…". Expect a few minutes for 8 cases.</span></label></li>
+        <li><label><input type="checkbox" id="l06-2"><span>Read the verdict, then Pearson r, Spearman ρ, rank agreement and MAE. Note the sample size.</span></label></li>
+        <li><label><input type="checkbox" id="l06-3"><span>Read the error-by-dimension bars. Which dimension do the judges disagree on most?</span></label></li>
+        <li><label><input type="checkbox" id="l06-4"><span>Re-run with Llama 3.2 3B as both candidate and judge under test, and compare with the first run.</span></label></li>
+        <li><label><input type="checkbox" id="l06-5"><span>Switch to the <b>Compare</b> tab in the top navigation (the swap check is not on Judge reliability). Pick a <code>writing</code> case, set <b>Model A</b> = Qwen3 4B, <b>Model B</b> = Llama 3.2 3B and <b>Judge model</b> = Qwen2.5 Coder 7B, tick "Swap positions to check for bias" and click <b>Compare</b>. Does the winner hold when the answers swap places?</span></label></li>
+        <li><label><input type="checkbox" id="l06-6"><span>Switch to the <b>Ensemble</b> tab. Pick a <code>writing</code> case and a candidate <b>Model</b>, tick Llama 3.2 3B and Qwen2.5 Coder 7B under <b>Panel of judges</b>, and click <b>Run ensemble</b>. Read the average and the spread.</span></label></li>
+      </ul>
+      <div class="quirk"><span class="quirk__title">Different words in the app</span><p>The lab's middle verdict "uncertain" is shown as <b>questionable</b>. The lab also says the page warns about a self-judging setup; it doesn't, so watch which models you picked.</p></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>A high MAE on correctness is serious. On clarity or efficiency it is less alarming, since those are more subjective.</li>
+        <li>If one judge squeezes all scores into a narrow band, Pearson drops while Spearman can stay high.</li>
+        <li>Both judges here are small local models. Treat "reliable" as "agrees with a slightly larger model", not as ground truth.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>If a judge is unreliable, what would you change first: the rubric, the model, or the task scope?</li>
+        <li>With only 8 cases, how much weight can you put on a Pearson r?</li>
+        <li>How would you bring human ratings into this loop?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-06">Your notes</label><textarea id="n-lab-06" placeholder="Verdict, r, ρ, MAE for each setup; position bias yes/no"></textarea></div>
+    </section>
+
+    <!-- ===================== LAB 07 ===================== -->
+    <section class="block lab" id="lab-07" data-section="lab-07">
+      <header>
+        <div class="lab__top"><span class="lab__num">07</span><h2>The full matrix</h2><span class="lab__tab">Tab: <b>Matrix</b></span></div>
+        <p class="lede">Sweep several cases, candidates and mechanisms at once, then turn that sweep into a gate a CI pipeline could enforce.</p>
+      </header>
+      <dl class="recipe">
+        <dt>Cases</dt><dd><code>sentiment_classification</code> · 8–10 cases, including <code>sent-08</code> and <code>sent-13</code></dd>
+        <dt>Candidates</dt><dd><code>small-naive</code> · Llama 3.2 3B<br><code>mid-naive</code> · Qwen3 4B<br><code>large-naive</code> · Qwen2.5 Coder 7B</dd>
+        <dt>Mechanisms</dt><dd><span class="mech">Exact match</span><span class="mech">LLM judge</span></dd>
+        <dt>Judge</dt><dd>Llama 3.2 3B (local)</dd>
+      </dl>
+      <ul class="steps">
+        <li><label><input type="checkbox" id="l07-1"><span>Set up the three candidates above, with no overrides, and click <b>Run matrix</b>.</span></label></li>
+        <li><label><input type="checkbox" id="l07-2"><span>Read the table: which column passes most, which rows fail for every model, and what each column costs in the <b>Tokens</b> row?</span></label></li>
+        <li><label><input type="checkbox" id="l07-3"><span>Add <code>small-refined</code> (Llama 3.2 3B) and <code>large-refined</code> (Qwen2.5 Coder 7B), each with the Lab 02 refined template as override, and run the same cases again for the full 2×2.</span></label></li>
+        <li><label><input type="checkbox" id="l07-4"><span>Where exact match passes but the judge scores 0.5–0.7, read the answer: correct but thin.</span></label></li>
+        <li><label><input type="checkbox" id="l07-6"><span>Read the <b>Gate</b> row at the bottom of the table: each column is <b>PASS</b> or <b>BLOCKED</b> against the thresholds above the table (0.90, and 0.75 for the LLM judge). Lower a threshold and watch the verdicts change without re-running.</span></label></li>
+        <li><label><input type="checkbox" id="l07-5"><span>Run the CI gate below in a terminal and read its exit code.</span></label></li>
+      </ul>
+      <h3 class="sub">An eval gate, end to end</h3>
+      <div class="prose"><p>The Matrix's <b>Gate</b> row does this check in the app. The script below is the version a CI job would run, using the same endpoints: <code>POST /api/runs</code>, poll <code>GET /api/runs/{id}</code>, then compute accuracy and exit non-zero below 0.90. It was tested against this backend: Llama 3.2 3B scored 0.80 on these five cases, so the gate fails with exit code 1. The Gate row in the Matrix gives the same result for those cases: <b>BLOCKED</b>, exact_match 0.80 &lt; 0.90.</p></div>
+      <div class="code"><pre>API=http://localhost:8001/api
+RUN=$(curl -s -X POST $API/runs -H 'content-type: application/json' -d '{
+  "case_ids": ["sent-01","sent-02","sent-03","sent-08","sent-13"],
+  "candidates": [{"model_id": "llama3-2-3b", "label": "small"}],
+  "methods": ["exact_match"]
+}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+until curl -s $API/runs/$RUN | grep -qE '"status":"(completed|failed)"'; do sleep 2; done
+curl -s $API/runs/$RUN | python3 -c '
+import json, sys
+run = json.load(sys.stdin)
+vals = [s["value"] for r in run["results"] for s in r["scores"] if s["method"] == "exact_match"]
+acc = sum(vals) / len(vals)
+print(f"exact match accuracy: {acc:.2f} over {len(vals)} cases")
+sys.exit(0 if acc >= 0.90 else 1)'
+echo "exit code: $?"</pre><button class="copy" type="button">Copy</button></div>
+      <h3 class="sub">What to look for</h3>
+      <ul class="look">
+        <li>The column to deploy is the cheapest one that clears your threshold, not necessarily the top scorer.</li>
+        <li>An <code>error</code> chip means a model call or parse failed. Open that case in the Playground to debug it.</li>
+      </ul>
+      <details class="reflect"><summary>Reflection</summary><ul>
+        <li>Which mechanism would you trust as a CI gate for classification? For code? For customer-facing writing?</li>
+        <li>Who owns the evaluation set, and who is allowed to change it?</li>
+        <li>What is the biggest obstacle to running this gate in your current project?</li>
+      </ul></details>
+      <div class="notes"><label for="n-lab-07">Your notes</label><textarea id="n-lab-07" placeholder="Pass counts per column; gate result"></textarea></div>
+    </section>
+
+    <div class="footer-row">
+      <span>Ticks and notes are saved in this browser only.</span>
+      <button class="btn" type="button" id="reset">Clear ticks and notes</button>
+      <span id="reset-confirm" hidden>Clear everything? <button class="btn btn--danger" type="button" id="reset-yes">Yes, clear</button> <button class="btn" type="button" id="reset-no">Keep</button></span>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const KEY = "eval-lab-companion-v1";
+  let state = { checks: {}, notes: {} };
+  try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(state, JSON.parse(raw)); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+  // ---- checklists & progress ----
+  const boxes = [...document.querySelectorAll('.steps input[type="checkbox"]')];
+  boxes.forEach((b) => { b.checked = !!state.checks[b.id]; b.addEventListener("change", () => { state.checks[b.id] = b.checked; save(); progress(); }); });
+  function progress() {
+    let done = 0;
+    document.querySelectorAll("[data-section]").forEach((sec) => {
+      const bs = [...sec.querySelectorAll('.steps input[type="checkbox"]')];
+      const d = bs.filter((b) => b.checked).length; done += d;
+      const id = sec.dataset.section;
+      const c = document.querySelector(`[data-count="${id}"]`);
+      if (c) c.textContent = `${d}/${bs.length}`;
+      const link = document.querySelector(`.toc a[href="#${id}"]`);
+      if (link) link.classList.toggle("is-done", bs.length > 0 && d === bs.length);
+    });
+    document.getElementById("overall-count").textContent = `${done} / ${boxes.length}`;
+    document.getElementById("overall-bar").style.width = `${boxes.length ? (100 * done) / boxes.length : 0}%`;
+  }
+  progress();
+
+  // ---- notes ----
+  document.querySelectorAll(".notes textarea").forEach((t) => {
+    t.value = state.notes[t.id] || "";
+    t.addEventListener("input", () => { state.notes[t.id] = t.value; save(); });
+  });
+
+  // ---- reset (in-page confirm) ----
+  const confirmEl = document.getElementById("reset-confirm");
+  document.getElementById("reset").addEventListener("click", () => { confirmEl.hidden = false; });
+  document.getElementById("reset-no").addEventListener("click", () => { confirmEl.hidden = true; });
+  document.getElementById("reset-yes").addEventListener("click", () => {
+    state = { checks: {}, notes: {} }; save();
+    boxes.forEach((b) => (b.checked = false));
+    document.querySelectorAll(".notes textarea").forEach((t) => (t.value = ""));
+    confirmEl.hidden = true; progress();
+  });
+
+  // ---- copy buttons ----
+  document.querySelectorAll(".copy").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pre = btn.parentElement.querySelector("pre");
+      const done = (label) => { btn.textContent = label; setTimeout(() => (btn.textContent = "Copy"), 1400); };
+      const select = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done("Press ⌘C"); };
+      try { navigator.clipboard.writeText(pre.textContent).then(() => done("Copied"), select); } catch (e) { select(); }
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
