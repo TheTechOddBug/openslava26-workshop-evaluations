@@ -551,6 +551,61 @@ input[type="range"] {
   min-width: 150px;
 }
 
+.cell-usage {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell-usage--total {
+  font-weight: 600;
+  color: inherit;
+}
+
+.matrix tfoot td {
+  background: var(--surface-2);
+}
+
+.gate-thresholds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.gate-threshold {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.gate-threshold input {
+  width: 72px;
+}
+
+.gate-verdict {
+  align-self: flex-start;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.gate-verdict--pass {
+  background: var(--pass-weak);
+  color: var(--pass);
+}
+
+.gate-verdict--blocked {
+  background: var(--fail-weak);
+  color: var(--fail);
+}
+
 .progress {
   height: 6px;
   border-radius: 999px;
