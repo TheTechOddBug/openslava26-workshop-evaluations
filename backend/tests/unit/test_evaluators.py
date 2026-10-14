@@ -119,3 +119,20 @@ async def test_llm_judge_empty_response_explains_reasoning_budget():
     score = await _ev(EvalMethod.LLM_JUDGE).evaluate(_case(rubric=["clear"]), "answer", ctx)
     assert score.passed is None
     assert "no content" in score.detail
+
+
+async def test_llm_judge_does_not_grade_an_empty_candidate_response():
+    judge_model = ModelSpec(
+        id="j", display_name="Judge", provider=Provider.OPENAI_COMPAT, model_id="jm"
+    )
+
+    def must_not_be_called(*_args):
+        raise AssertionError("the judge model must not be called for an empty response")
+
+    ctx = EvaluationContext(
+        judge_client=FakeLLMClient(handler=must_not_be_called), judge_model=judge_model
+    )
+    score = await _ev(EvalMethod.LLM_JUDGE).evaluate(_case(reference="negative"), "  \n", ctx)
+    assert score.value == 0.0
+    assert score.dimensions is None
+    assert "empty response" in score.detail

@@ -169,6 +169,19 @@ class LlmJudgeEvaluator:
                 passed=None,
                 detail="no judge model selected",
             )
+        if not response.strip():
+            # Nothing to grade. Asked anyway, a small judge tends to score the reference
+            # answer it is shown instead and hand an empty response a high mark.
+            return Score(
+                method=self.spec.method,
+                value=0.0,
+                passed=None,
+                detail=(
+                    "The candidate returned an empty response, so there is nothing to judge. "
+                    "A reasoning model can spend its whole token budget thinking: raise max "
+                    "tokens or pick a non-reasoning candidate."
+                ),
+            )
         messages = judge_rubric.build_judge_messages(
             prompt=case.prompt, response=response, reference=case.reference, rubric=case.rubric
         )
