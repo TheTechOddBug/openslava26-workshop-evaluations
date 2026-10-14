@@ -92,18 +92,19 @@ Because the model is held constant, any score difference is attributable to the 
    {prompt}
    ```
 
-   Replace `{prompt}` with the placeholder your prompt expects, or leave it as literal
-   text — the app injects the case's `prompt` field into the override at run time.
-
-   **Note:** if the app's prompt override syntax uses a different placeholder, check the
-   case text in the Playground first to understand the structure, then adapt accordingly.
+   Leave `{prompt}` exactly as written. When the run starts, the app replaces it with
+   each case's own `prompt` field, so this one template runs across every case you
+   selected. An override without `{prompt}` is sent to the model exactly as written, the
+   same text for every case.
 
 9. In the **Mechanisms** card, check **Exact match**.
 
 10. Click **Run matrix**.
 
 11. Watch the progress bar fill as cells complete. When done, read the results table.
-    Rows are the cases you selected; columns are `naive` and `refined`.
+    Rows are the cases you selected; columns are `naive` and `refined`. Under the score
+    chips, each cell shows the candidate's token usage (`86 in · 49 out`), and the
+    **Tokens** row at the bottom totals each column.
 
 ---
 
@@ -120,11 +121,18 @@ Because the model is held constant, any score difference is attributable to the 
 
 ### The cost angle
 
-In the **Model response** detail (visible from the Playground for individual cells), you
-can see the token count and latency. A refined prompt is typically longer than a naive
-one — more tokens, higher cost per call. But if the refined prompt achieves the same score
-on a smaller model that would otherwise require a model three times the size to reach that
-score with a naive prompt, the overall cost is lower. The math favours prompt engineering.
+Every Matrix cell shows the candidate's tokens split into **in** (the prompt) and **out**
+(the response), and the **Tokens** row totals them per column. Hover a cell to see its
+latency. The totals count the candidate's calls only; judge calls are not included.
+
+A refined prompt is typically longer than a naive one, so the `refined` column has more
+**input** tokens. Look at the **output** tokens as well: a prompt that asks for exactly one
+word often cuts the response from a full sentence to a single token, and the column can end
+up cheaper overall. In one run on Llama 3.2 3B over eight cases, `naive` used 680 in · 423
+out and `refined` 1,360 in · 16 out. And if the refined prompt achieves the same score on a
+smaller model that would otherwise require a model three times the size to reach that
+score with a naive prompt, the overall cost is lower still. The math favours prompt
+engineering.
 
 ---
 

@@ -57,6 +57,11 @@ in code, an eval matrix catches regressions in model output quality. The backend
 `GET /api/runs/{id}` until status is completed, checks the scores, and exits with an
 appropriate code.
 
+The Matrix tab has this gate built in: the **Gate** row under the results checks each
+column's average per mechanism against a threshold you set, and marks the column **PASS**
+or **BLOCKED**. A cell that errored counts as 0, so a broken model call cannot slip
+through.
+
 The datasets and thresholds are the specification. If you cannot write them down, you
 cannot automate the gate.
 
@@ -91,11 +96,18 @@ cannot automate the gate.
    candidates) × (number of mechanisms per case). They run in parallel.
 
 7. When complete, read the table. Look for the pattern described in Lab 02: does
-   `small-refined` score close to `large-naive`? Does it exceed `small-naive`?
+   `small-refined` score close to `large-naive`? Does it exceed `small-naive`? Compare the
+   columns' totals in the **Tokens** row too.
 
 8. Add a fourth candidate: same large model, with the refined prompt. Label it
    `large-refined`. Run again. This gives you the full 2×2: small vs large, naive vs
    refined.
+
+9. Read the **Gate** row at the bottom of the table. It applies the CI gate described
+   above to each column: a threshold per mechanism (0.90 by default, 0.75 for the LLM
+   judge), and **PASS** or **BLOCKED** depending on whether every mechanism's average
+   reaches it. Change a threshold above the table and the verdicts update without
+   re-running. Which columns would you ship?
 
 ---
 
@@ -103,7 +115,8 @@ cannot automate the gate.
 
 - The column that performs best overall is the one you would deploy — but "best" depends on
   cost. A `small-refined` candidate that matches `large-naive` at a lower token count is
-  the Pareto-optimal choice.
+  the Pareto-optimal choice. Read the counts from the **Tokens** row under the table: it
+  totals each column's input and output tokens.
 - Cells that fail with `error` chips indicate a mechanism configuration issue or a model
   that did not return parseable output. Click through to the Playground to debug a single
   failing cell.

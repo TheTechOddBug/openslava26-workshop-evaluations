@@ -593,20 +593,20 @@ npm run dev        # http://localhost:5173</pre>
       </dl>
       <ol class="steps">
         <li>Set up both candidates with <b>Add candidate</b>.</li>
-        <li><b>Run matrix</b>. Count green chips per column.</li>
+        <li><b>Run matrix</b>. Count green chips per column, then compare the <b>Tokens</b> row.</li>
         <li>Where <code>naive</code> fails and <code>refined</code> passes, read the naive answer.</li>
       </ol>
     </div>
     <div class="stack">
-      <div class="heads-up"><b>Heads-up: the override replaces the whole prompt</b><span><code>{prompt}</code> is not filled in. Paste the review text into your override and tick one case per run.</span></div>
+      <div class="heads-up"><b>Tip: end the override with <code>{prompt}</code></b><span>The app puts each case's own prompt there, so one refined template runs across every case you tick.</span></div>
       <p class="small">The dataset prompts already list the three labels. If <code>naive</code> passes everything, write a deliberately vague override to force a gap.</p>
       <div class="spacer"></div>
       <p class="discuss">When does a refined prompt start to overfit the evaluation set?</p>
     </div>
   </div>
   <aside class="notes">
-    <p>The app uses the override text as written. The lab text says <code>{prompt}</code> is replaced with the case prompt; it is not. Until that is fixed in the app, people run one case at a time with the review pasted in. The Lab Companion page has a builder that writes these overrides.</p>
-    <p>If the fix lands before the session, delete the heads-up box and let people tick 5–8 cases.</p>
+    <p>Have people tick 5–8 cases, including <code>sent-08</code>, <code>sent-09</code> and <code>sent-13</code>. The refined template ends with <code>{prompt}</code>, which the app replaces with each case's prompt; the Lab Companion has it ready to copy. An override without <code>{prompt}</code> sends the same text for every case.</p>
+    <p>Point at the Tokens row: in a test run on Llama 3.2 3B over eight cases, naive used 680 in · 423 out and refined 1,360 in · 16 out. The refined prompt doubles the input but cuts the output to one word per answer.</p>
   </aside>
 </section>
 
@@ -696,7 +696,10 @@ npm run dev        # http://localhost:5173</pre>
       <p class="discuss">What would a test suite look like for a data extraction task?</p>
     </div>
   </div>
-  <aside class="notes"><p>Good moment to compare a coder model with a general small model on the same cases. Qwen3's think block is stripped before the code runs. If its answer is cut off, raise Max tokens.</p></aside>
+  <aside class="notes"><p>Good moment to compare a coder model with a general small model on the same cases. Qwen3's think block is stripped before the code runs. If its answer is cut off, raise Max tokens.</p>
+  <p><b>Expect <code>code-101</code> to fail for every local model.</b> Say it in the room so nobody thinks their setup is broken. Qwen2.5 Coder 7B skips the "ignore lines without <code>=</code>" rule (<code>ValueError: not enough values to unpack</code>), Llama 3.2 3B drops a value that contains <code>=</code> (<code>KeyError: 'TOKEN'</code>). Use it for "would you have passed this by reading it?". For passes, point people at <code>code-102</code>, <code>code-103</code> and <code>code-105</code> with the coder model.</p>
+  <p>A <code>NameError</code> saying <code>merge_env_files</code> is not defined means Qwen3 4B used its whole token budget thinking and returned no code.</p>
+  <p><b><code>sql-101</code> also fails for every local model.</b> The answer needs one row per category (2 rows). Qwen2.5 Coder 7B adds <code>LIMIT 1</code> and returns only the top row overall (<code>rows_candidate=1 rows_reference=2</code>); Llama 3.2 3B groups by category only and mixes the models' averages. Good prompt for "the detail string tells you what kind of mistake it was". "No SQL query found in the response" means Qwen3 ran out of tokens.</p></aside>
 </section>
 
 <!-- 17 · Concept: judge dimensions -->
@@ -834,18 +837,19 @@ npm run dev        # http://localhost:5173</pre>
         <li>8–10 <code>sentiment_classification</code> cases.</li>
         <li><span class="mech">Exact match</span> and <span class="mech">LLM judge</span>.</li>
         <li>Run three columns, then add <code>large-refined</code>.</li>
+        <li>Read the <b>Gate</b> row: PASS or BLOCKED per column.</li>
       </ol>
     </div>
     <div class="stack">
       <h3>The question</h3>
-      <p>Does <code>small-refined</code> get close to <code>large-naive</code>? If it does at fewer tokens, it is the one to ship.</p>
+      <p>Does <code>small-refined</code> get close to <code>large-naive</code>? If it does at fewer tokens in the <b>Tokens</b> row, it is the one to ship.</p>
       <ul class="list small">
         <li>Passes exact match, 0.5–0.7 from the judge: correct but thin.</li>
         <li>An <code>error</code> chip: open that cell's case in the Playground.</li>
       </ul>
     </div>
   </div>
-  <aside class="notes"><p>Same override caveat as Lab 02 applies to the refined columns until the <code>{prompt}</code> fix lands.</p>
+  <aside class="notes"><p>The refined columns use the Lab 02 refined template as override, with <code>{prompt}</code> at the end, so the whole 2×2 runs across all the ticked cases at once.</p>
   <p>Local options: small = Llama 3.2 3B or Qwen3 4B, large = Qwen2.5 Coder 7B.</p></aside>
 </section>
 
@@ -861,6 +865,7 @@ npm run dev        # http://localhost:5173</pre>
         <li>Block the release when any score falls below its threshold.</li>
       </ol>
       <p class="small muted">The dataset and thresholds are the specification. If you can't write them down, you can't automate the gate.</p>
+      <p class="small"><b>In the app:</b> the Matrix's <b>Gate</b> row runs this same check on every column.</p>
     </div>
 <pre>RUN=$(curl -s -X POST $API/runs -d '{
   "case_ids": ["sent-01","sent-02","sent-03",
@@ -874,7 +879,8 @@ npm run dev        # http://localhost:5173</pre>
 exact match accuracy: 0.80 over 5 cases
 exit code: 1        # gate fails, release blocked</pre>
   </div>
-  <aside class="notes"><p><b>~5 min.</b> That output is real: Llama 3.2 3B scored 0.80 on these five cases when this was tested, so the gate fails. If there's time, run it live. The full working script is in the Lab Companion page (it uses Python instead of jq and sets the content-type header).</p></aside>
+  <aside class="notes"><p><b>~5 min.</b> That output is real: Llama 3.2 3B scored 0.80 on these five cases when this was tested, so the gate fails. If there's time, run it live. The full working script is in the Lab Companion page (it uses Python instead of jq and sets the content-type header).</p>
+  <p>Or show it in the app: run the Matrix with these five cases and Llama 3.2 3B, and the Gate row reads BLOCKED, exact_match 0.80 &lt; 0.90, the same answer as the script. Lower the threshold live to show the verdict flip.</p></aside>
 </section>
 
 <!-- 23 · Takeaways -->

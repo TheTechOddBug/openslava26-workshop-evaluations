@@ -173,16 +173,6 @@ textarea, select {
 }
 textarea { min-height: 76px; resize: vertical; width: 100%; }
 
-/* prompt builder */
-.builder { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); max-width: 80ch; }
-.builder__row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
-.builder__row label { display: flex; flex-direction: column; gap: 4px; font-size: var(--step--1); color: var(--muted); font-weight: 600; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.seg button { font: inherit; font-size: 0.9rem; padding: 6px 12px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
-.seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
-.expected { font-size: 0.9rem; color: var(--muted); }
-.expected b { font-family: var(--font-mono); color: var(--ink); font-weight: 500; }
 
 .footer-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: var(--muted); font-size: var(--step--1); border-top: 1px solid var(--line); padding-top: 18px; }
 .btn { font: inherit; font-size: 0.9rem; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -350,44 +340,49 @@ pkill -f vite              # web app</pre><button class="copy" type="button">Cop
         <div class="lab__top"><span class="lab__num">02</span><h2>Prompt refinement</h2><span class="lab__tab">Tab: <b>Matrix</b></span></div>
         <p class="lede">Hold the model fixed, change only the prompt, and see how much of the quality gap the prompt alone closes.</p>
       </header>
-      <div class="quirk"><span class="quirk__title">The <code>{prompt}</code> placeholder is not filled in</span><p>The prompt override replaces the whole case prompt as written. If you paste the lab's refined prompt with <code>{prompt}</code>, the model never sees the review. Until the app is fixed, run the matrix <b>one case at a time</b> and paste an override that already contains that case's review. The builder below writes it for you.</p></div>
+      <h3 class="sub">Override templates</h3>
+      <div class="prose"><p>Paste one into a candidate's <b>Prompt override (optional)</b> field. The app replaces <code>{prompt}</code> with each case's own prompt, so one template runs across every case you tick.</p></div>
+      <div class="cmds">
+        <div class="cmd">
+          <span class="cmd__label">Refined (from the lab)</span>
+          <div class="code"><pre>You are a sentiment classifier. Read the following customer review and classify
+its overall sentiment using exactly one of these three labels:
 
-      <div class="builder" id="builder">
-        <div class="builder__row">
-          <label for="b-case">Case
-            <select id="b-case"></select>
-          </label>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:var(--step--1);color:var(--muted);font-weight:600">Prompt style</span>
-            <div class="seg" role="group" aria-label="Prompt style">
-              <button type="button" id="b-refined" aria-pressed="true">Refined</button>
-              <button type="button" id="b-vague" aria-pressed="false">Deliberately vague</button>
-            </div>
-          </div>
-          <span class="expected" id="b-expected"></span>
+- positive: the review expresses satisfaction, praise, or approval
+- negative: the review expresses dissatisfaction, complaint, or criticism
+- neutral: the review is balanced, factual, or expresses neither clear approval nor disapproval
+
+Respond with exactly one word — the label — and nothing else.
+
+Review:
+{prompt}</pre><button class="copy" type="button">Copy</button></div>
         </div>
-        <div class="code"><pre id="b-out"></pre><button class="copy" type="button">Copy</button></div>
-        <span class="expected">Paste this into the candidate's <b>Prompt override (optional)</b> field. The case prompts already list the three labels, so the default prompt is well constrained. Use the vague style to force a visible gap.</span>
+        <div class="cmd">
+          <span class="cmd__label">Deliberately vague, to force a gap</span>
+          <div class="code"><pre>What do you make of this?
+
+{prompt}</pre><button class="copy" type="button">Copy</button></div>
+        </div>
       </div>
 
       <dl class="recipe">
-        <dt>Cases</dt><dd><code>sentiment_classification</code> · tick <b>one</b> case per run (try <code>sent-08</code>, <code>sent-09</code>, <code>sent-13</code>)</dd>
-        <dt>Candidate 1</dt><dd>Label <code>naive</code> · Llama 3.2 3B · override: the vague prompt from the builder</dd>
-        <dt>Candidate 2</dt><dd>Label <code>refined</code> · Llama 3.2 3B · override: the refined prompt from the builder</dd>
-        <dt>Candidate 3</dt><dd>Label <code>default</code> · Llama 3.2 3B · no override (the dataset's own prompt)</dd>
+        <dt>Cases</dt><dd><code>sentiment_classification</code> · 5–8 cases, including <code>sent-08</code>, <code>sent-09</code> and <code>sent-13</code></dd>
+        <dt>Candidate 1</dt><dd>Label <code>naive</code> · Llama 3.2 3B · no override (the dataset's own prompt)</dd>
+        <dt>Candidate 2</dt><dd>Label <code>refined</code> · Llama 3.2 3B · override: the refined template</dd>
+        <dt>Candidate 3</dt><dd>Label <code>vague</code> · Llama 3.2 3B · override: the vague template (optional)</dd>
         <dt>Mechanisms</dt><dd><span class="mech">Exact match</span></dd>
       </dl>
       <ul class="steps">
-        <li><label><input type="checkbox" id="l02-1"><span>On <b>Matrix</b>, choose <code>sentiment_classification</code> and leave a single case ticked.</span></label></li>
+        <li><label><input type="checkbox" id="l02-1"><span>On <b>Matrix</b>, choose <code>sentiment_classification</code> and tick 5–8 cases.</span></label></li>
         <li><label><input type="checkbox" id="l02-2"><span>Set up the three candidates above, all on the same model. Use <b>Add candidate</b> for each new row.</span></label></li>
         <li><label><input type="checkbox" id="l02-3"><span>Tick <span class="mech">Exact match</span> and click <b>Run matrix</b>.</span></label></li>
-        <li><label><input type="checkbox" id="l02-4"><span>Repeat for two or three more cases, changing the case and both overrides each time. Tally passes per column in your notes.</span></label></li>
-        <li><label><input type="checkbox" id="l02-5"><span>Cost check: the Matrix doesn't show tokens, so paste each override into the Playground's <b>Custom</b> prompt (reference: the expected label) and compare the <b>tokens</b> and <b>latency</b> under the response.</span></label></li>
+        <li><label><input type="checkbox" id="l02-4"><span>Count the passes per column, then read the responses where <code>naive</code> and <code>refined</code> disagree.</span></label></li>
+        <li><label><input type="checkbox" id="l02-5"><span>Cost check: compare the <b>Tokens</b> row under the table. Each cell shows <code>in · out</code> tokens and each column has a total. The refined prompt costs more <b>input</b> tokens, but a one-word answer can cut the <b>output</b> tokens a lot. Hover a cell for its latency.</span></label></li>
       </ul>
       <h3 class="sub">What to look for</h3>
       <ul class="look">
         <li>Where <code>naive</code> fails and <code>refined</code> passes, read the naive response. Is the label missing, or are two labels mentioned?</li>
-        <li>If <code>default</code> already passes everything, that shows the dataset prompt is already refined. That is a finding too.</li>
+        <li>If <code>naive</code> already passes everything, the dataset prompt is already well constrained. That is a finding too. Add the <code>vague</code> column to see a gap.</li>
       </ul>
       <details class="reflect"><summary>Reflection</summary><ul>
         <li>When does a refined prompt become overfit to the evaluation set? How would you test for that?</li>
@@ -446,6 +441,7 @@ pkill -f vite              # web app</pre><button class="copy" type="button">Cop
         <li><label><input type="checkbox" id="l04-4"><span><code>sql-101</code> with <span class="mech">SQL execution</span>. Check whether the reference query has <code>ORDER BY</code> (ordered compare) or not (any row order is fine).</span></label></li>
         <li><label><input type="checkbox" id="l04-5"><span><code>reason-101</code> with <span class="mech">Numeric tolerance</span>: the last number in the response is compared to the reference.</span></label></li>
       </ul>
+      <div class="quirk"><span class="quirk__title"><code>code-101</code> and <code>sql-101</code> fail for every local model</span><p>That is expected, and a good example of "would you have passed this by reading it?". Each model misses a different rule: Qwen2.5 Coder 7B splits lines without checking for <code>=</code> (<code>ValueError: not enough values to unpack</code>), and Llama 3.2 3B loses the value <code>abc=def</code> (<code>KeyError: 'TOKEN'</code>). For passes, try <code>code-102</code>, <code>code-103</code> and <code>code-105</code> with Qwen2.5 Coder 7B.</p><p>If Qwen3 4B shows <code>NameError: name 'merge_env_files' is not defined</code>, it ran out of tokens while thinking and returned no code. Raise <b>Max tokens</b>, or count it as a fail for budget reasons.</p><p><code>sql-101</code> asks for the best model <i>in each category</i>, so the right answer has 2 rows. Qwen2.5 Coder 7B computes the averages correctly, then adds <code>LIMIT 1</code> and keeps only the top row overall (<code>rows_candidate=1 rows_reference=2</code>). Llama 3.2 3B returns 2 rows but groups by category only, which mixes the models' averages. <code>order_sensitive=True</code> means row order counts too, because the reference ends with <code>ORDER BY category</code>. When Qwen3 4B runs out of tokens it returns no SQL, shown as "no SQL query found in the response".</p></div>
       <h3 class="sub">What to look for</h3>
       <ul class="look">
         <li>Failure kind points to the fix: a syntax error, a failed assertion, or a timeout.</li>
@@ -508,8 +504,8 @@ pkill -f vite              # web app</pre><button class="copy" type="button">Cop
         <li><label><input type="checkbox" id="l06-2"><span>Read the verdict, then Pearson r, Spearman ρ, rank agreement and MAE. Note the sample size.</span></label></li>
         <li><label><input type="checkbox" id="l06-3"><span>Read the error-by-dimension bars. Which dimension do the judges disagree on most?</span></label></li>
         <li><label><input type="checkbox" id="l06-4"><span>Re-run with Llama 3.2 3B as both candidate and judge under test, and compare with the first run.</span></label></li>
-        <li><label><input type="checkbox" id="l06-5"><span><b>Compare</b> tab: A = Qwen3 4B, B = Llama 3.2 3B, judge Qwen2.5 Coder 7B, tick "Swap positions to check for bias". Does the winner hold when the answers swap places?</span></label></li>
-        <li><label><input type="checkbox" id="l06-6"><span><b>Ensemble</b> tab: one answer, judges Llama 3.2 3B and Qwen2.5 Coder 7B. Read the average and the spread.</span></label></li>
+        <li><label><input type="checkbox" id="l06-5"><span>Switch to the <b>Compare</b> tab in the top navigation (the swap check is not on Judge reliability). Pick a <code>writing</code> case, set <b>Model A</b> = Qwen3 4B, <b>Model B</b> = Llama 3.2 3B and <b>Judge model</b> = Qwen2.5 Coder 7B, tick "Swap positions to check for bias" and click <b>Compare</b>. Does the winner hold when the answers swap places?</span></label></li>
+        <li><label><input type="checkbox" id="l06-6"><span>Switch to the <b>Ensemble</b> tab. Pick a <code>writing</code> case and a candidate <b>Model</b>, tick Llama 3.2 3B and Qwen2.5 Coder 7B under <b>Panel of judges</b>, and click <b>Run ensemble</b>. Read the average and the spread.</span></label></li>
       </ul>
       <div class="quirk"><span class="quirk__title">Different words in the app</span><p>The lab's middle verdict "uncertain" is shown as <b>questionable</b>. The lab also says the page warns about a self-judging setup; it doesn't, so watch which models you picked.</p></div>
       <h3 class="sub">What to look for</h3>
@@ -540,13 +536,14 @@ pkill -f vite              # web app</pre><button class="copy" type="button">Cop
       </dl>
       <ul class="steps">
         <li><label><input type="checkbox" id="l07-1"><span>Set up the three candidates above, with no overrides, and click <b>Run matrix</b>.</span></label></li>
-        <li><label><input type="checkbox" id="l07-2"><span>Read the table: which column passes most, and which rows fail for every model?</span></label></li>
-        <li><label><input type="checkbox" id="l07-3"><span>For the refined columns (<code>small-refined</code>, <code>large-refined</code>), use one case per run with the Lab 02 builder until the <code>{prompt}</code> fix lands.</span></label></li>
+        <li><label><input type="checkbox" id="l07-2"><span>Read the table: which column passes most, which rows fail for every model, and what each column costs in the <b>Tokens</b> row?</span></label></li>
+        <li><label><input type="checkbox" id="l07-3"><span>Add <code>small-refined</code> (Llama 3.2 3B) and <code>large-refined</code> (Qwen2.5 Coder 7B), each with the Lab 02 refined template as override, and run the same cases again for the full 2×2.</span></label></li>
         <li><label><input type="checkbox" id="l07-4"><span>Where exact match passes but the judge scores 0.5–0.7, read the answer: correct but thin.</span></label></li>
+        <li><label><input type="checkbox" id="l07-6"><span>Read the <b>Gate</b> row at the bottom of the table: each column is <b>PASS</b> or <b>BLOCKED</b> against the thresholds above the table (0.90, and 0.75 for the LLM judge). Lower a threshold and watch the verdicts change without re-running.</span></label></li>
         <li><label><input type="checkbox" id="l07-5"><span>Run the CI gate below in a terminal and read its exit code.</span></label></li>
       </ul>
       <h3 class="sub">An eval gate, end to end</h3>
-      <div class="prose"><p>This uses the same endpoints a CI job would: <code>POST /api/runs</code>, poll <code>GET /api/runs/{id}</code>, then compute accuracy and exit non-zero below 0.90. It was tested against this backend: Llama 3.2 3B scored 0.80 on these five cases, so the gate fails with exit code 1.</p></div>
+      <div class="prose"><p>The Matrix's <b>Gate</b> row does this check in the app. The script below is the version a CI job would run, using the same endpoints: <code>POST /api/runs</code>, poll <code>GET /api/runs/{id}</code>, then compute accuracy and exit non-zero below 0.90. It was tested against this backend: Llama 3.2 3B scored 0.80 on these five cases, so the gate fails with exit code 1. The Gate row in the Matrix gives the same result for those cases: <b>BLOCKED</b>, exact_match 0.80 &lt; 0.90.</p></div>
       <div class="code"><pre>API=http://localhost:8001/api
 RUN=$(curl -s -X POST $API/runs -H 'content-type: application/json' -d '{
   "case_ids": ["sent-01","sent-02","sent-03","sent-08","sent-13"],
@@ -636,40 +633,6 @@ echo "exit code: $?"</pre><button class="copy" type="button">Copy</button></div>
     });
   });
 
-  // ---- Lab 02 prompt builder (reviews copied from sentiment_classification.jsonl) ----
-  const CASES = [{"id": "sent-01", "label": "positive", "msg": "The new coffee maker is fantastic. It brews evenly, heats up in under two minutes, and the cleanup is effortless. Hands down the best kitchen appliance I've bought this year."}, {"id": "sent-02", "label": "negative", "msg": "I placed my order three weeks ago and it still hasn't arrived. When I contacted support they told me to just wait. This is unacceptable service and I will not be ordering again."}, {"id": "sent-03", "label": "neutral", "msg": "My order was delivered on Thursday as scheduled. The box contained all three items listed. I have set them up and they are working."}, {"id": "sent-04", "label": "positive", "msg": "Your technical support team is outstanding. They resolved a complex integration issue in a single session and followed up the next day to make sure everything was still running. Really sets the bar high."}, {"id": "sent-05", "label": "negative", "msg": "Worst purchase I've made in years. The material is flimsy, the stitching came apart after one wash, and the sizing chart is completely wrong. Returning immediately."}, {"id": "sent-06", "label": "neutral", "msg": "Could you let me know whether order #44821 includes the extended warranty? I'd like to confirm before the return window closes."}, {"id": "sent-07", "label": "positive", "msg": "I wasn't expecting much given the price, but it does the job without any issues. Wouldn't say it's life-changing, though I've found myself reaching for it more often than I thought I would."}, {"id": "sent-08", "label": "negative", "msg": "Oh, wonderful — the subscription renewed for the fourth time without any notification, just as my bank account was looking a little too comfortable. Truly a masterclass in customer communication."}, {"id": "sent-09", "label": "neutral", "msg": "The shipping was quick and the price was reasonable, but the product feels cheaper than expected and the instructions were hard to follow. It works, but I'm not sure I'd recommend it."}, {"id": "sent-10", "label": "positive", "msg": "Just wanted to say the refund was processed faster than expected and the customer service representative was genuinely helpful. Made a frustrating situation much easier to deal with."}, {"id": "sent-11", "label": "negative", "msg": "The app crashes every time I try to export a file, and support has not responded to my ticket in five days. At this price point I expect basic functionality to actually work."}, {"id": "sent-12", "label": "neutral", "msg": "I ordered the medium size in black. The website shows a lead time of 7 to 10 business days. Can you confirm the current estimated dispatch date for my order?"}, {"id": "sent-13", "label": "negative", "msg": "I wouldn't go out of my way to call it terrible, but I also can't honestly tell anyone this is worth buying. It sort of works, most of the time, which I suppose is something."}, {"id": "sent-14", "label": "positive", "msg": "Picked up a pair of the running shoes last month and they've been excellent on long runs. The cushioning held up well and I had zero blisters in the first week. Already planning to buy a second pair."}, {"id": "sent-15", "label": "neutral", "msg": "I've been using the product for about two weeks. The performance is in line with what the spec sheet describes. No significant issues have come up and I haven't had a reason to contact support."}];
-  const sel = document.getElementById("b-case");
-  const out = document.getElementById("b-out");
-  const expected = document.getElementById("b-expected");
-  const bRef = document.getElementById("b-refined"), bVag = document.getElementById("b-vague");
-  let style = "refined";
-  CASES.forEach((c) => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.id; sel.appendChild(o); });
-  sel.value = "sent-08";
-  function build() {
-    const c = CASES.find((x) => x.id === sel.value);
-    expected.innerHTML = `Expected label: <b>${c.label}</b>`;
-    out.textContent = style === "refined"
-      ? `You are a sentiment classifier. Read the following customer review and classify
-its overall sentiment using exactly one of these three labels:
-
-- positive: the review expresses satisfaction, praise, or approval
-- negative: the review expresses dissatisfaction, complaint, or criticism
-- neutral: the review is balanced, factual, or expresses neither clear approval nor disapproval
-
-Sarcasm counts as the sentiment the writer actually means.
-Respond with exactly one word — the label — and nothing else.
-
-Review:
-"${c.msg}"`
-      : `What do you make of this message?
-
-"${c.msg}"`;
-  }
-  const setStyle = (s) => { style = s; bRef.setAttribute("aria-pressed", s === "refined"); bVag.setAttribute("aria-pressed", s === "vague"); build(); };
-  bRef.addEventListener("click", () => setStyle("refined"));
-  bVag.addEventListener("click", () => setStyle("vague"));
-  sel.addEventListener("change", build);
-  build();
 })();
 </script>
 </body>
